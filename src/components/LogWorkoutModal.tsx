@@ -29,12 +29,6 @@ function Stepper({
   const dec = () => onChange(Math.max(min, parseFloat((value - step).toFixed(2))));
   const inc = () => onChange(parseFloat((value + step).toFixed(2)));
 
-  const display = Number.isInteger(value / step) && step < 1
-    ? value.toFixed(1)
-    : value % 1 === 0
-    ? String(value)
-    : value.toFixed(1);
-
   return (
     <div className="flex-1">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">{label}</p>
