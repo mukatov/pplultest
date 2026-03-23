@@ -83,14 +83,14 @@ export default function Home() {
                 style={{ scrollSnapAlign: 'center' }}
                 className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all active:scale-95 ${
                   isSelected
-                    ? 'bg-[#262626] text-[#fafafa] w-[200px] h-[200px]'
-                    : 'bg-[#f5f5f5] text-[#0a0a0a] w-[160px] h-[160px]'
+                    ? 'bg-[#f5f5f5] text-[#0a0a0a] w-[200px] h-[200px]'
+                    : 'bg-[#262626] text-[#fafafa] w-[160px] h-[160px]'
                 }`}
               >
                 <span className={`font-semibold tracking-[-1px] ${isSelected ? 'text-3xl' : 'text-2xl'}`}>
                   {type.toUpperCase()}
                 </span>
-                <span className={`text-xs mt-1 ${isSelected ? 'text-[#a3a3a3]' : 'text-[#737373]'}`}>
+                <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#a3a3a3]'}`}>
                   {count} exercises
                 </span>
               </button>
