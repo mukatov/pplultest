@@ -1,0 +1,175 @@
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Plus, Pencil, Trophy, ChevronRight, Dumbbell, Clock } from 'lucide-react';
+import { useWorkoutStore } from '../store/workoutStore';
+import { useAuthStore } from '../store/authStore';
+import { DayType } from '../types';
+import LogWorkoutModal from '../components/LogWorkoutModal';
+import AddExerciseModal from '../components/AddExerciseModal';
+import EditDayModal from '../components/EditDayModal';
+
+const DAY_CONFIG: Record<DayType, { gradient: string; accent: string; description: string }> = {
+  push: { gradient: 'from-indigo-600/20 to-indigo-900/10', accent: 'text-indigo-400', description: 'Chest · Shoulders · Triceps' },
+  pull: { gradient: 'from-violet-600/20 to-violet-900/10', accent: 'text-violet-400', description: 'Back · Biceps · Rear Delts' },
+  legs: { gradient: 'from-purple-600/20 to-purple-900/10', accent: 'text-purple-400', description: 'Quads · Hamstrings · Glutes · Calves' },
+  upper: { gradient: 'from-blue-600/20 to-blue-900/10', accent: 'text-blue-400', description: 'Full Upper Body' },
+  lower: { gradient: 'from-cyan-600/20 to-cyan-900/10', accent: 'text-cyan-400', description: 'Full Lower Body' },
+};
+
+export default function TrainingDay() {
+  const { day } = useParams<{ day: string }>();
+  const dayType = day as DayType;
+  const { exercises, trainingDays, getLastWorkout, getPersonalRecord } = useWorkoutStore();
+  const { currentUser } = useAuthStore();
+
+  const [logExerciseId, setLogExerciseId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+
+  const trainingDay = trainingDays.find(d => d.type === dayType);
+  const dayExercises = exercises.filter(e => trainingDay?.exerciseIds.includes(e.id));
+  const config = DAY_CONFIG[dayType] || DAY_CONFIG.push;
+
+  const logExercise = logExerciseId ? exercises.find(e => e.id === logExerciseId) : null;
+
+  function formatDate(iso: string) {
+    const d = new Date(iso);
+    const diff = Date.now() - d.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    return `${days}d ago`;
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className={`bg-gradient-to-br ${config.gradient} border-b border-gray-800`}>
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className={`text-3xl font-bold capitalize ${config.accent}`}>
+                {dayType} Day
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">{config.description}</p>
+              <p className="text-gray-500 text-xs mt-2">{dayExercises.length} exercises</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowEdit(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm text-gray-300 transition-all"
+              >
+                <Pencil size={14} />
+                Edit
+              </button>
+              <button
+                onClick={() => setShowAdd(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm text-white transition-all"
+              >
+                <Plus size={14} />
+                Add Exercise
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Exercise list */}
+      <div className="max-w-4xl mx-auto px-6 py-6">
+        {dayExercises.length === 0 ? (
+          <div className="text-center py-16">
+            <Dumbbell size={40} className="text-gray-700 mx-auto mb-4" />
+            <p className="text-gray-500">No exercises yet.</p>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm text-white transition-all"
+            >
+              Add your first exercise
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {dayExercises.map(exercise => {
+              const last = currentUser ? getLastWorkout(exercise.id, currentUser.id) : undefined;
+              const pr = currentUser ? getPersonalRecord(exercise.id, currentUser.id) : undefined;
+              const maxWeight = last ? Math.max(...last.sets.map(s => s.weight)) : 0;
+              const totalSets = last?.sets.length ?? 0;
+
+              return (
+                <button
+                  key={exercise.id}
+                  onClick={() => setLogExerciseId(exercise.id)}
+                  className="w-full bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 rounded-xl p-4 text-left transition-all group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-white group-hover:text-indigo-300 transition-colors">
+                          {exercise.name}
+                        </h3>
+                        {pr && (
+                          <span className="flex items-center gap-1 text-xs text-yellow-400">
+                            <Trophy size={11} />
+                            {pr.weight}kg
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{exercise.muscleGroups.join(' · ')}</p>
+
+                      {last ? (
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <Clock size={11} className="text-gray-600" />
+                            {formatDate(last.date)}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {totalSets} sets · {maxWeight}kg
+                          </span>
+                          <div className="flex gap-1">
+                            {last.sets.slice(0, 4).map((s, i) => (
+                              <span key={i} className="text-xs bg-gray-800 px-1.5 py-0.5 rounded text-gray-400">
+                                {s.weight}×{s.reps}
+                              </span>
+                            ))}
+                            {last.sets.length > 4 && (
+                              <span className="text-xs text-gray-600">+{last.sets.length - 4}</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-600 mt-2">No sessions logged yet</p>
+                      )}
+                    </div>
+                    <ChevronRight size={16} className="text-gray-600 group-hover:text-gray-400 transition-colors mt-1 ml-3 flex-shrink-0" />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      {logExercise && (
+        <LogWorkoutModal
+          exerciseId={logExercise.id}
+          exerciseName={logExercise.name}
+          dayType={dayType}
+          onClose={() => setLogExerciseId(null)}
+        />
+      )}
+      {showAdd && (
+        <AddExerciseModal
+          onClose={() => setShowAdd(false)}
+          onAdd={() => {}}
+        />
+      )}
+      {showEdit && (
+        <EditDayModal
+          dayType={dayType}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
+    </div>
+  );
+}
