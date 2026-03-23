@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -22,7 +22,7 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/pplultest">
+    <HashRouter>
       <Routes>
         <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><Register /></RedirectIfAuthed>} />
@@ -35,6 +35,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
