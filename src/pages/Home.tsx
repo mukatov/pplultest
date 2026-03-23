@@ -4,21 +4,13 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType } from '../types';
 
-const DAY_CONFIG: { type: DayType; label: string; subtitle: string; accent: string; border: string }[] = [
-  { type: 'push', label: 'Push', subtitle: 'Chest · Shoulders · Triceps', accent: 'bg-indigo-500', border: 'border-indigo-500/30' },
-  { type: 'pull', label: 'Pull', subtitle: 'Back · Biceps', accent: 'bg-violet-500', border: 'border-violet-500/30' },
-  { type: 'legs', label: 'Legs', subtitle: 'Quads · Hamstrings · Calves', accent: 'bg-purple-500', border: 'border-purple-500/30' },
-  { type: 'upper', label: 'Upper', subtitle: 'Upper Body Compound', accent: 'bg-blue-500', border: 'border-blue-500/30' },
-  { type: 'lower', label: 'Lower', subtitle: 'Lower Body Compound', accent: 'bg-cyan-500', border: 'border-cyan-500/30' },
+const DAY_CONFIG: { type: DayType; label: string; subtitle: string; color: string }[] = [
+  { type: 'push', label: 'Push', subtitle: 'Chest · Shoulders · Triceps', color: '#6366f1' },
+  { type: 'pull', label: 'Pull', subtitle: 'Back · Biceps', color: '#8b5cf6' },
+  { type: 'legs', label: 'Legs', subtitle: 'Quads · Hamstrings · Calves', color: '#a855f7' },
+  { type: 'upper', label: 'Upper', subtitle: 'Full Upper Body', color: '#3b82f6' },
+  { type: 'lower', label: 'Lower', subtitle: 'Full Lower Body', color: '#06b6d4' },
 ];
-
-const TEXT_COLORS: Record<DayType, string> = {
-  push: 'text-indigo-400',
-  pull: 'text-violet-400',
-  legs: 'text-purple-400',
-  upper: 'text-blue-400',
-  lower: 'text-cyan-400',
-};
 
 function daysSince(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -48,46 +40,53 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="px-4 pt-10 pb-6">
         <div className="flex items-center gap-2 mb-1">
-          <Dumbbell size={20} className="text-indigo-400" />
-          <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
+          <Dumbbell size={20} className="text-indigo-600" />
+          <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
             PPL/UL Tracker
           </h1>
         </div>
-        <p className="text-gray-400 text-sm">Hey, {currentUser.username} 👋</p>
+        <p className="text-gray-500 text-sm">Hey, {currentUser.username} 👋</p>
       </div>
 
       {/* Session picker */}
       <div className="px-4">
-        <h2 className="text-xl font-bold text-white mb-4">Start a Session</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Start a Session</h2>
+        <p className="text-sm text-gray-400 mb-4">Choose a training type to begin</p>
         <div className="space-y-3">
-          {DAY_CONFIG.map(({ type, label, subtitle, accent, border }) => {
+          {DAY_CONFIG.map(({ type, label, subtitle, color }) => {
             const count = exerciseCount(type);
             const last = lastTrainedLabel(type);
             return (
               <button
                 key={type}
                 onClick={() => navigate(`/${type}`)}
-                className={`w-full flex items-center gap-4 p-4 bg-gray-900 rounded-2xl border ${border} active:scale-[0.98] transition-transform text-left`}
+                className="w-full flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm active:scale-[0.98] hover:shadow-md hover:border-gray-300 transition-all text-left"
+                style={{ borderLeftWidth: 3, borderLeftColor: color }}
               >
-                {/* Color accent bar */}
-                <div className={`w-1 self-stretch rounded-full ${accent} shrink-0`} />
+                {/* Color icon */}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: color + '18' }}
+                >
+                  <Dumbbell size={18} style={{ color }} />
+                </div>
 
                 {/* Text */}
                 <div className="flex-1 min-w-0">
-                  <div className={`font-semibold text-base ${TEXT_COLORS[type]}`}>{label}</div>
-                  <div className="text-gray-400 text-sm truncate">{subtitle}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-600">{count} exercises</span>
-                    <span className="text-gray-700">·</span>
-                    <span className="text-xs text-gray-600">{last}</span>
+                  <div className="font-semibold text-base text-gray-900">{label}</div>
+                  <div className="text-gray-500 text-sm truncate">{subtitle}</div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-400">{count} exercises</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-xs text-gray-400">{last}</span>
                   </div>
                 </div>
 
-                <ChevronRight size={18} className="text-gray-600 shrink-0" />
+                <ChevronRight size={18} className="text-gray-300 flex-shrink-0" />
               </button>
             );
           })}

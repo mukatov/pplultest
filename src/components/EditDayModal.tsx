@@ -29,28 +29,28 @@ export default function EditDayModal({ dayType, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-2xl w-full max-w-lg border border-gray-700 shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-xl">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-white capitalize">{dayType} Day — Edit Exercises</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{selected.length} exercises selected</p>
+            <h2 className="text-lg font-bold text-gray-900 capitalize">{dayType} Day — Edit Exercises</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{selected.length} exercises selected</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-3">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               autoFocus
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search exercises..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition-colors"
             />
           </div>
 
@@ -64,21 +64,21 @@ export default function EditDayModal({ dayType, onClose }: Props) {
                   onClick={() => toggle(exercise.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
                     isSelected
-                      ? 'bg-indigo-600/20 border-indigo-500/50'
-                      : 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                      ? 'bg-indigo-50 border-indigo-200'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border transition-all ${
-                    isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-600'
+                    isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'
                   }`}>
-                    {isSelected && <Check size={12} />}
+                    {isSelected && <Check size={12} className="text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{exercise.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{exercise.name}</p>
                     <p className="text-xs text-gray-500 truncate">{exercise.muscleGroups.join(', ')}</p>
                   </div>
                   {suggested && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex-shrink-0">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 flex-shrink-0">
                       Suggested
                     </span>
                   )}
@@ -90,7 +90,7 @@ export default function EditDayModal({ dayType, onClose }: Props) {
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm font-medium hover:bg-gray-700 transition-colors"
+              className="flex-1 py-2.5 rounded-lg bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition-colors"
             >
               Cancel
             </button>
