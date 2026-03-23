@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, ChevronDown } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { DayType, Exercise } from '../types';
 import { suggestDays, DEFAULT_EXERCISES } from '../data/exercises';
@@ -13,25 +13,27 @@ const ALL_DAYS: { type: DayType; label: string }[] = [
 ];
 
 interface Props {
+  dayType: DayType;
   onClose: () => void;
   onAdd: (exercise: Exercise) => void;
 }
 
-export default function AddExerciseModal({ onClose, onAdd }: Props) {
+export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
   const { exercises, addExercise } = useWorkoutStore();
   const [name, setName] = useState('');
   const [muscles, setMuscles] = useState('');
-  const [selectedDays, setSelectedDays] = useState<DayType[]>([]);
+  const [selectedDays, setSelectedDays] = useState<DayType[]>([dayType]);
   const [suggested, setSuggested] = useState<DayType[]>([]);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'new' | 'existing'>('existing');
+  const [tab, setTab] = useState<'library' | 'new'>('library');
+  const [showAll, setShowAll] = useState(false);
 
   const handleNameChange = (val: string) => {
     setName(val);
     if (val.length > 2) {
       const s = suggestDays(val);
       setSuggested(s);
-      setSelectedDays(s);
+      setSelectedDays(s.length ? s : [dayType]);
     }
   };
 
@@ -41,7 +43,7 @@ export default function AddExerciseModal({ onClose, onAdd }: Props) {
     );
   };
 
-  const handleAdd = () => {
+  const handleCreate = () => {
     if (!name.trim()) return;
     const exercise: Exercise = {
       id: crypto.randomUUID(),
@@ -57,70 +59,132 @@ export default function AddExerciseModal({ onClose, onAdd }: Props) {
   const allExercises = [
     ...DEFAULT_EXERCISES,
     ...exercises.filter(e => !DEFAULT_EXERCISES.find(d => d.id === e.id)),
-  ].filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  ];
+
+  const forThisDay = allExercises.filter(e =>
+    e.suggestedDays.includes(dayType) &&
+    e.name.toLowerCase().includes(search.toLowerCase())
+  );
+  const others = allExercises.filter(e =>
+    !e.suggestedDays.includes(dayType) &&
+    e.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const dayLabel = dayType.charAt(0).toUpperCase() + dayType.slice(1);
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Add Exercise to Session</h2>
+      <div className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Add Exercise</h2>
+            <p className="text-xs text-gray-400 mt-0.5">to {dayLabel} session</p>
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100">
-          {(['existing', 'new'] as const).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-3 text-sm font-medium transition-colors ${
-                tab === t ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {t === 'existing' ? 'From Library' : 'Create New'}
-            </button>
-          ))}
+        <div className="flex border-b border-gray-100 flex-shrink-0">
+          <button
+            onClick={() => setTab('library')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              tab === 'library' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            From Library
+          </button>
+          <button
+            onClick={() => setTab('new')}
+            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+              tab === 'new' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            Create New
+          </button>
         </div>
 
-        <div className="p-6">
-          {tab === 'existing' ? (
+        <div className="p-5 overflow-y-auto flex-1">
+          {tab === 'library' ? (
             <div className="space-y-3">
               <input
                 autoFocus
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search exercises..."
+                placeholder={`Search exercises...`}
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition-colors"
               />
-              <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
-                {allExercises.map(exercise => {
-                  const inStore = exercises.some(e => e.id === exercise.id);
-                  return (
-                    <button
-                      key={exercise.id}
-                      onClick={() => {
-                        if (!inStore) addExercise(exercise);
-                        onAdd(exercise);
-                        onClose();
-                      }}
-                      className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 border border-gray-200 cursor-pointer transition-all text-left"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{exercise.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{exercise.muscleGroups.join(', ')}</p>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0 ml-2">
-                        {exercise.suggestedDays.map(d => (
-                          <span key={d} className="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-500">{d}</span>
-                        ))}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+
+              {/* Exercises for this day type */}
+              {forThisDay.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-2">
+                    {dayLabel} exercises
+                  </p>
+                  <div className="space-y-1">
+                    {forThisDay.map(exercise => (
+                      <button
+                        key={exercise.id}
+                        onClick={() => {
+                          if (!exercises.some(e => e.id === exercise.id)) addExercise(exercise);
+                          onAdd(exercise);
+                          onClose();
+                        }}
+                        className="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 hover:border-indigo-200 cursor-pointer transition-all text-left"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{exercise.name}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{exercise.muscleGroups.join(', ')}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other exercises */}
+              {others.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowAll(v => !v)}
+                    className="flex items-center gap-1 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 hover:text-gray-600 transition-colors"
+                  >
+                    Other exercises
+                    <ChevronDown size={12} className={`transition-transform ${showAll ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showAll && (
+                    <div className="space-y-1">
+                      {others.map(exercise => (
+                        <button
+                          key={exercise.id}
+                          onClick={() => {
+                            if (!exercises.some(e => e.id === exercise.id)) addExercise(exercise);
+                            onAdd(exercise);
+                            onClose();
+                          }}
+                          className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 cursor-pointer transition-all text-left"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{exercise.name}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{exercise.muscleGroups.join(', ')}</p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0 ml-2">
+                            {exercise.suggestedDays.map(d => (
+                              <span key={d} className="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-500">{d}</span>
+                            ))}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {forThisDay.length === 0 && others.length === 0 && (
+                <p className="text-center text-gray-400 text-sm py-8">No exercises found</p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -174,7 +238,7 @@ export default function AddExerciseModal({ onClose, onAdd }: Props) {
               </div>
 
               <button
-                onClick={handleAdd}
+                onClick={handleCreate}
                 disabled={!name.trim()}
                 className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium text-white transition-colors"
               >
