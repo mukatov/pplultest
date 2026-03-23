@@ -143,7 +143,7 @@ export default function TrainingDay() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-400 mt-2">Tap to log your first set</p>
+                        <p className="text-xs text-indigo-400 mt-2 font-medium">Tap to log sets →</p>
                       )}
                     </div>
                     <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 transition-colors mt-1 ml-3 flex-shrink-0" />
@@ -166,6 +166,7 @@ export default function TrainingDay() {
       )}
       {showAdd && (
         <AddExerciseModal
+          dayType={dayType}
           onClose={() => setShowAdd(false)}
           onAdd={handleAddExercise}
         />
