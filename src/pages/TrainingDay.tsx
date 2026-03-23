@@ -45,7 +45,7 @@ export default function TrainingDay() {
     <div className="min-h-screen">
       {/* Header */}
       <div className={`bg-gradient-to-br ${config.gradient} border-b border-gray-800`}>
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-start justify-between">
             <div>
               <h1 className={`text-3xl font-bold capitalize ${config.accent}`}>
@@ -54,7 +54,7 @@ export default function TrainingDay() {
               <p className="text-gray-400 text-sm mt-1">{config.description}</p>
               <p className="text-gray-500 text-xs mt-2">{dayExercises.length} exercises</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <button
                 onClick={() => setShowEdit(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm text-gray-300 transition-all"
@@ -75,7 +75,7 @@ export default function TrainingDay() {
       </div>
 
       {/* Exercise list */}
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-4">
         {dayExercises.length === 0 ? (
           <div className="text-center py-16">
             <Dumbbell size={40} className="text-gray-700 mx-auto mb-4" />
