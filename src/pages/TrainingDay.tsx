@@ -42,7 +42,7 @@ export default function TrainingDay() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20">
       {/* Header */}
       <div className={`bg-gradient-to-br ${config.gradient} border-b border-gray-800`}>
         <div className="max-w-4xl mx-auto px-4 py-6">
