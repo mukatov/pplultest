@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Play, Settings, LogOut } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
@@ -14,6 +14,7 @@ export default function Home() {
   const { trainingDays } = useWorkoutStore();
   const { currentUser, logout } = useAuthStore();
   const [selected, setSelected] = useState<DayType>('push');
+  const cardRefs = useRef<Partial<Record<DayType, HTMLButtonElement>>>({});
 
   if (!currentUser) return null;
 
@@ -69,7 +70,11 @@ export default function Home() {
             return (
               <button
                 key={type}
-                onClick={() => setSelected(type)}
+                ref={el => { if (el) cardRefs.current[type] = el; }}
+                onClick={() => {
+                  setSelected(type);
+                  cardRefs.current[type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }}
                 className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all active:scale-95 ${
                   isSelected
                     ? 'bg-[#262626] text-[#fafafa] w-[200px] h-[200px]'
