@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Trophy, Minus } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Plus, Trash2, Trophy, Minus, ChevronsUpDown } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry } from '../types';
@@ -29,6 +29,37 @@ function Stepper({
   const dec = () => onChange(Math.max(min, parseFloat((value - step).toFixed(2))));
   const inc = () => onChange(parseFloat((value + step).toFixed(2)));
 
+  const dragRef = useRef<{ lastY: number; pointerId: number; dragging: boolean } | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const DRAG_THRESHOLD = 8;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Don't intercept taps on the input itself
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    e.preventDefault();
+    dragRef.current = { lastY: e.clientY, pointerId: e.pointerId, dragging: false };
+    trackRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dy = dragRef.current.lastY - e.clientY;
+    if (Math.abs(dy) >= DRAG_THRESHOLD) {
+      dragRef.current.dragging = true;
+      setIsDragging(true);
+      if (dy > 0) inc();
+      else dec();
+      dragRef.current.lastY = e.clientY;
+    }
+  };
+
+  const handlePointerUp = () => {
+    dragRef.current = null;
+    setIsDragging(false);
+  };
+
   return (
     <div className="flex-1">
       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">{label}</p>
@@ -39,7 +70,15 @@ function Stepper({
         >
           <Minus size={18} className="text-gray-600" strokeWidth={2.5} />
         </button>
-        <div className="flex-1 flex flex-col items-center">
+        <div
+          ref={trackRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          className={`flex-1 flex flex-col items-center cursor-ns-resize select-none rounded-xl transition-colors ${isDragging ? 'bg-indigo-50' : ''}`}
+          style={{ touchAction: 'none' }}
+        >
           <input
             type="number"
             inputMode={step < 1 ? 'decimal' : 'numeric'}
@@ -49,9 +88,13 @@ function Stepper({
               if (!isNaN(v) && v >= min) onChange(v);
               else if (e.target.value === '') onChange(min);
             }}
-            className="w-full text-center text-3xl font-bold text-gray-900 bg-transparent focus:outline-none leading-none py-1"
+            className="w-full text-center text-3xl font-bold text-gray-900 bg-transparent focus:outline-none leading-none py-1 pointer-events-none"
+            tabIndex={-1}
           />
-          {unit && <span className="text-xs text-gray-400 font-medium -mt-0.5">{unit}</span>}
+          {unit
+            ? <span className="text-xs text-gray-400 font-medium -mt-0.5">{unit}</span>
+            : <ChevronsUpDown size={12} className="text-gray-300 mt-0.5" />
+          }
         </div>
         <button
           onPointerDown={inc}
