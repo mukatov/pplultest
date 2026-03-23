@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { DayType } from '../types';
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
-const SESSION_TYPES: { type: DayType; label: string; subtitle: string }[] = [
-  { type: 'push',  label: 'PUSH',  subtitle: 'Chest · Shoulders · Triceps' },
-  { type: 'pull',  label: 'PULL',  subtitle: 'Back · Biceps' },
-  { type: 'legs',  label: 'LEGS',  subtitle: 'Quads · Hamstrings · Calves' },
-  { type: 'upper', label: 'UPPER', subtitle: 'Full Upper Body' },
-  { type: 'lower', label: 'LOWER', subtitle: 'Full Lower Body' },
+const SESSION_TYPES: { type: DayType; label: string; subtitle: string; color: string; emoji: string }[] = [
+  { type: 'push',  label: 'Push',  subtitle: 'Chest · Shoulders · Triceps', color: '#6366f1', emoji: '💪' },
+  { type: 'pull',  label: 'Pull',  subtitle: 'Back · Biceps',               color: '#8b5cf6', emoji: '🏋️' },
+  { type: 'legs',  label: 'Legs',  subtitle: 'Quads · Hamstrings · Calves', color: '#a855f7', emoji: '🦵' },
+  { type: 'upper', label: 'Upper', subtitle: 'Full Upper Body',             color: '#3b82f6', emoji: '🔝' },
+  { type: 'lower', label: 'Lower', subtitle: 'Full Lower Body',             color: '#06b6d4', emoji: '⬇️' },
 ];
 
 interface Props {
@@ -23,32 +23,43 @@ export default function StartSessionModal({ onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#171717] flex flex-col screen-enter">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
+    <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col screen-enter">
+      {/* Nav bar */}
+      <div className="bg-white border-b border-gray-100 px-4 flex items-center gap-3 h-14 flex-shrink-0">
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#262626] flex-shrink-0"
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors -ml-1"
         >
-          <ChevronLeft size={16} className="text-[#fafafa]" />
+          <ArrowLeft size={20} className="text-gray-700" />
         </button>
-        <p className="flex-1 text-center text-[3rem] font-semibold leading-[3rem] tracking-[-0.09375rem] text-[#fafafa]">
-          PPL/UL
-        </p>
-        <div className="w-10 h-10 flex-shrink-0" />
+        <div>
+          <h1 className="text-base font-bold text-gray-900 leading-tight">Start Workout</h1>
+          <p className="text-xs text-gray-400">Choose your session type</p>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {SESSION_TYPES.map(({ type, label, subtitle }) => (
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3">
+        {SESSION_TYPES.map(({ type, label, subtitle, color, emoji }) => (
           <button
             key={type}
             onClick={() => handlePick(type)}
-            className="w-full flex items-center justify-center py-8 rounded-full bg-[#262626] border border-[#404040] active:scale-[0.98] hover:bg-[#2a2a2a] transition-all"
+            className="w-full flex items-center gap-4 p-5 rounded-2xl bg-white border border-gray-200 shadow-sm active:scale-[0.98] hover:shadow-md hover:border-gray-300 transition-all text-left"
           >
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-[1.875rem] font-semibold tracking-[-0.0625rem] text-[#fafafa]">{label}</span>
-              <span className="text-xs text-[#a3a3a3]">{subtitle}</span>
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+              style={{ backgroundColor: color + '18' }}
+            >
+              {emoji}
             </div>
+            <div className="flex-1">
+              <p className="text-lg font-bold text-gray-900">{label}</p>
+              <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
+            </div>
+            <div
+              className="w-1.5 self-stretch rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
+            />
           </button>
         ))}
       </div>
