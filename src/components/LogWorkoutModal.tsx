@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Trophy } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Trophy, Minus } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry } from '../types';
@@ -9,6 +9,65 @@ interface Props {
   exerciseName: string;
   dayType: DayType;
   onClose: () => void;
+}
+
+function Stepper({
+  value,
+  onChange,
+  step,
+  min,
+  label,
+  unit,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  step: number;
+  min: number;
+  label: string;
+  unit?: string;
+}) {
+  const dec = () => onChange(Math.max(min, parseFloat((value - step).toFixed(2))));
+  const inc = () => onChange(parseFloat((value + step).toFixed(2)));
+
+  const display = Number.isInteger(value / step) && step < 1
+    ? value.toFixed(1)
+    : value % 1 === 0
+    ? String(value)
+    : value.toFixed(1);
+
+  return (
+    <div className="flex-1">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 text-center">{label}</p>
+      <div className="flex items-center gap-2">
+        <button
+          onPointerDown={dec}
+          className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 active:bg-gray-300 flex items-center justify-center flex-shrink-0 transition-colors"
+        >
+          <Minus size={18} className="text-gray-600" strokeWidth={2.5} />
+        </button>
+        <div className="flex-1 flex flex-col items-center">
+          <input
+            type="number"
+            inputMode={step < 1 ? 'decimal' : 'numeric'}
+            value={value || ''}
+            onChange={e => {
+              const v = parseFloat(e.target.value);
+              if (!isNaN(v) && v >= min) onChange(v);
+              else if (e.target.value === '') onChange(min);
+            }}
+            className="w-full text-center text-3xl font-bold text-gray-900 bg-transparent focus:outline-none leading-none py-1"
+          />
+          {unit && <span className="text-xs text-gray-400 font-medium -mt-0.5">{unit}</span>}
+        </div>
+        <button
+          onPointerDown={inc}
+          className="w-11 h-11 rounded-xl bg-indigo-100 hover:bg-indigo-200 active:bg-indigo-300 flex items-center justify-center flex-shrink-0 transition-colors"
+        >
+          <Plus size={18} className="text-indigo-600" strokeWidth={2.5} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onClose }: Props) {
@@ -26,8 +85,8 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
     }
   }, [lastWorkout]);
 
-  const updateSet = (index: number, field: keyof SetEntry, value: string) => {
-    setSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: parseFloat(value) || 0 } : s));
+  const updateSet = (index: number, field: keyof SetEntry, value: number) => {
+    setSets(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
   };
 
   const addSet = () => setSets(prev => [...prev, { ...prev[prev.length - 1] }]);
@@ -40,7 +99,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
     setTimeout(onClose, 900);
   };
 
-  const maxWeight = Math.max(...sets.map(s => s.weight));
+  const maxWeight = sets.length ? Math.max(...sets.map(s => s.weight)) : 0;
   const isNewPR = pr ? maxWeight > pr.weight : maxWeight > 0;
 
   return (
@@ -70,63 +129,54 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {/* PR banner */}
         {isNewPR && maxWeight > 0 && (
-          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 text-yellow-600 mb-6">
+          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 text-yellow-600">
             <Trophy size={18} />
             <span className="font-bold">New Personal Record!</span>
           </div>
         )}
 
-        {/* Column headers */}
-        <div className="grid grid-cols-12 gap-3 px-1 mb-3">
-          <span className="col-span-1 text-xs font-bold text-gray-400 text-center">#</span>
-          <span className="col-span-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Weight kg</span>
-          <span className="col-span-5 text-xs font-bold text-gray-400 uppercase tracking-wider">Reps</span>
-          <span className="col-span-1" />
-        </div>
-
-        {/* Sets */}
-        <div className="space-y-3">
-          {sets.map((set, i) => (
-            <div key={i} className="grid grid-cols-12 gap-3 items-center">
-              <span className="col-span-1 text-sm font-bold text-gray-400 text-center">{i + 1}</span>
-              <div className="col-span-5">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={set.weight || ''}
-                  onChange={e => updateSet(i, 'weight', e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-base font-semibold text-gray-900 text-center focus:outline-none focus:border-indigo-400 transition-colors shadow-sm"
-                />
-              </div>
-              <div className="col-span-5">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={set.reps || ''}
-                  onChange={e => updateSet(i, 'reps', e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-base font-semibold text-gray-900 text-center focus:outline-none focus:border-indigo-400 transition-colors shadow-sm"
-                />
-              </div>
-              <div className="col-span-1 flex justify-center">
-                {sets.length > 1 && (
-                  <button onClick={() => removeSet(i)} className="text-gray-300 hover:text-red-400 transition-colors">
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
+        {/* Set cards */}
+        {sets.map((set, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 pt-3 pb-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-gray-500">Set {i + 1}</span>
+              {sets.length > 1 && (
+                <button
+                  onClick={() => removeSet(i)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="flex gap-4">
+              <Stepper
+                value={set.weight}
+                onChange={v => updateSet(i, 'weight', v)}
+                step={2.5}
+                min={0}
+                label="Weight"
+                unit="kg"
+              />
+              <div className="w-px bg-gray-100 self-stretch" />
+              <Stepper
+                value={set.reps}
+                onChange={v => updateSet(i, 'reps', v)}
+                step={1}
+                min={1}
+                label="Reps"
+              />
+            </div>
+          </div>
+        ))}
 
         {/* Add set */}
         <button
           onClick={addSet}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all text-sm font-semibold"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all text-sm font-semibold"
         >
           <Plus size={16} /> Add Set
         </button>
