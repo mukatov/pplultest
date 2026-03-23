@@ -20,7 +20,7 @@ export default function Register() {
     }
     const result = register(username, password);
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/home');
     } else {
       setError(result.error || 'Registration failed');
     }

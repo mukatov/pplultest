@@ -81,7 +81,7 @@ export default function Dashboard() {
     : [];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 py-6 pb-20 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
@@ -109,7 +109,7 @@ export default function Dashboard() {
       {/* Quick navigate */}
       <div>
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Training Days</h2>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {trainingDays.map(d => {
             const count = userSets.filter(ws => ws.dayType === d.type).length;
             return (

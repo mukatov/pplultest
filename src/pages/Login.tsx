@@ -15,7 +15,7 @@ export default function Login() {
     setError('');
     const result = login(username, password);
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/home');
     } else {
       setError(result.error || 'Login failed');
     }
