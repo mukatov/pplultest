@@ -61,8 +61,13 @@ export default function Home() {
         </p>
 
         {/* Carousel */}
-        <div className="flex items-center gap-3 overflow-x-auto w-full justify-center pb-2"
-          style={{ scrollbarWidth: 'none' }}
+        <div className="flex items-center gap-3 overflow-x-auto w-full pb-2"
+          style={{
+            scrollbarWidth: 'none',
+            scrollSnapType: 'x mandatory',
+            paddingLeft: 'calc(50vw - 100px)',
+            paddingRight: 'calc(50vw - 100px)',
+          }}
         >
           {DAY_TYPES.map(type => {
             const isSelected = selected === type;
@@ -75,6 +80,7 @@ export default function Home() {
                   setSelected(type);
                   cardRefs.current[type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }}
+                style={{ scrollSnapAlign: 'center' }}
                 className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all active:scale-95 ${
                   isSelected
                     ? 'bg-[#262626] text-[#fafafa] w-[200px] h-[200px]'
