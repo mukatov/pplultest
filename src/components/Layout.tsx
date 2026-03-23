@@ -1,5 +1,4 @@
-import { ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Home, LayoutDashboard, User } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -8,7 +7,7 @@ const NAV = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ];
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout } = useAuthStore();
@@ -22,7 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     <div className="flex flex-col min-h-screen bg-slate-50 text-gray-900">
       {/* Main content */}
       <main className="flex-1 overflow-auto pb-16">
-        {children}
+        <Outlet />
       </main>
 
       {/* Bottom nav */}
