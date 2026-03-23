@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, Sparkles, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Sparkles, ChevronDown } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { DayType, Exercise } from '../types';
 import { suggestDays, DEFAULT_EXERCISES } from '../data/exercises';
@@ -73,30 +73,27 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
   const dayLabel = dayType.charAt(0).toUpperCase() + dayType.slice(1);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#171717] flex flex-col screen-enter">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2 flex-shrink-0">
+    <div className="fixed inset-0 z-50 bg-slate-50 flex flex-col screen-enter">
+      {/* Nav bar */}
+      <div className="bg-white border-b border-gray-100 px-4 flex items-center gap-3 h-14 flex-shrink-0">
         <button
           onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#262626] flex-shrink-0"
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors -ml-1"
         >
-          <ChevronLeft size={16} className="text-[#fafafa]" />
+          <ArrowLeft size={20} className="text-gray-700" />
         </button>
-        <div className="flex-1 text-center">
-          <p className="text-base font-semibold text-[#fafafa]">Add Exercise</p>
-          <p className="text-xs text-[#a3a3a3]">{dayLabel} session</p>
+        <div className="flex-1">
+          <h1 className="text-base font-bold text-gray-900 leading-tight">Add Exercise</h1>
+          <p className="text-xs text-gray-400">{dayLabel} session</p>
         </div>
-        <div className="w-10 h-10 flex-shrink-0" />
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#262626] flex-shrink-0 mx-4">
+      <div className="bg-white border-b border-gray-100 flex flex-shrink-0">
         <button
           onClick={() => setTab('library')}
           className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-            tab === 'library'
-              ? 'text-[#fafafa] border-b-2 border-[#fafafa]'
-              : 'text-[#525252]'
+            tab === 'library' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400'
           }`}
         >
           From Library
@@ -104,9 +101,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
         <button
           onClick={() => setTab('new')}
           className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-            tab === 'new'
-              ? 'text-[#fafafa] border-b-2 border-[#fafafa]'
-              : 'text-[#525252]'
+            tab === 'new' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400'
           }`}
         >
           Create New
@@ -123,12 +118,13 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search exercises..."
-              className="w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#a3a3a3] transition-colors"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition-colors shadow-sm"
             />
 
+            {/* Exercises for this day */}
             {forThisDay.length > 0 && (
               <div>
-                <p className="text-[0.875rem] font-normal tracking-[0.09375rem] uppercase text-[#a3a3a3] px-1 mb-2">
+                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider px-1 mb-2">
                   {dayLabel} exercises
                 </p>
                 <div className="space-y-2">
@@ -140,11 +136,11 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
                         onAdd(exercise);
                         onClose();
                       }}
-                      className="w-full flex items-center justify-center py-6 rounded-full bg-[#262626] border border-[#404040] hover:bg-[#2a2a2a] active:scale-[0.98] transition-all"
+                      className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-200 shadow-sm active:scale-[0.98] hover:border-indigo-200 hover:bg-indigo-50 transition-all text-left"
                     >
-                      <div className="flex flex-col items-center gap-0.5">
-                        <p className="font-semibold text-[#fafafa] uppercase text-[1.25rem] tracking-[0]">{exercise.name}</p>
-                        <p className="text-xs text-[#a3a3a3]">{exercise.muscleGroups.join(' · ')}</p>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">{exercise.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{exercise.muscleGroups.join(' · ')}</p>
                       </div>
                     </button>
                   ))}
@@ -152,11 +148,12 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
               </div>
             )}
 
+            {/* Other exercises */}
             {others.length > 0 && (
               <div>
                 <button
                   onClick={() => setShowAll(v => !v)}
-                  className="flex items-center gap-1.5 text-[0.875rem] font-normal tracking-[0.09375rem] uppercase text-[#525252] px-1 mb-2 hover:text-[#a3a3a3] transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider px-1 mb-2 hover:text-gray-600 transition-colors"
                 >
                   Other exercises
                   <ChevronDown size={13} className={`transition-transform ${showAll ? 'rotate-180' : ''}`} />
@@ -171,15 +168,15 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
                           onAdd(exercise);
                           onClose();
                         }}
-                        className="w-full flex items-center justify-between py-5 px-5 rounded-full bg-[#262626] border border-[#404040] hover:bg-[#2a2a2a] active:scale-[0.98] transition-all"
+                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-200 shadow-sm active:scale-[0.98] hover:border-gray-300 transition-all text-left"
                       >
-                        <div className="text-left">
-                          <p className="font-semibold text-[#fafafa]">{exercise.name}</p>
-                          <p className="text-xs text-[#a3a3a3] mt-0.5">{exercise.muscleGroups.join(' · ')}</p>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{exercise.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{exercise.muscleGroups.join(' · ')}</p>
                         </div>
                         <div className="flex gap-1 flex-shrink-0">
                           {exercise.suggestedDays.map(d => (
-                            <span key={d} className="text-xs px-1.5 py-0.5 rounded-md bg-[#404040] text-[#a3a3a3]">{d}</span>
+                            <span key={d} className="text-xs px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-400">{d}</span>
                           ))}
                         </div>
                       </button>
@@ -190,45 +187,39 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
             )}
 
             {forThisDay.length === 0 && others.length === 0 && (
-              <p className="text-center text-[#525252] text-sm py-16">No exercises found</p>
+              <p className="text-center text-gray-400 text-sm py-16">No exercises found</p>
             )}
           </div>
         ) : (
           <div className="px-4 py-6 space-y-5">
             <div>
-              <label className="text-[0.875rem] font-normal tracking-[0.09375rem] uppercase text-[#a3a3a3]">
-                Exercise Name
-              </label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Exercise Name</label>
               <input
                 autoFocus
                 type="text"
                 value={name}
                 onChange={e => handleNameChange(e.target.value)}
                 placeholder="e.g. Incline Dumbbell Press"
-                className="mt-2 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#a3a3a3] transition-colors"
+                className="mt-2 w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition-colors shadow-sm"
               />
             </div>
 
             <div>
-              <label className="text-[0.875rem] font-normal tracking-[0.09375rem] uppercase text-[#a3a3a3]">
-                Muscle Groups
-              </label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Muscle Groups</label>
               <input
                 type="text"
                 value={muscles}
                 onChange={e => setMuscles(e.target.value)}
                 placeholder="e.g. Chest, Triceps (comma separated)"
-                className="mt-2 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#a3a3a3] transition-colors"
+                className="mt-2 w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-400 transition-colors shadow-sm"
               />
             </div>
 
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <label className="text-[0.875rem] font-normal tracking-[0.09375rem] uppercase text-[#a3a3a3]">
-                  Training Days
-                </label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Training Days</label>
                 {suggested.length > 0 && name.length > 2 && (
-                  <span className="flex items-center gap-1 text-xs text-[#fafafa] font-medium">
+                  <span className="flex items-center gap-1 text-xs text-indigo-500 font-medium">
                     <Sparkles size={11} /> Suggested
                   </span>
                 )}
@@ -238,10 +229,10 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
                   <button
                     key={type}
                     onClick={() => toggleDay(type)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
                       selectedDays.includes(type)
-                        ? 'bg-[#f5f5f5] border-[#f5f5f5] text-[#0a0a0a]'
-                        : 'bg-transparent border-[#404040] text-[#a3a3a3] hover:border-[#fafafa]'
+                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                        : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                     }`}
                   >
                     {label}
@@ -253,7 +244,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
             <button
               onClick={handleCreate}
               disabled={!name.trim()}
-              className="w-full py-3 rounded-full bg-[#f5f5f5] hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed text-base font-medium text-[#0a0a0a] transition-colors"
+              className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-base font-bold text-white transition-colors shadow-sm mt-2"
             >
               Create & Add to Session
             </button>
