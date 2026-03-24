@@ -4,17 +4,17 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, Cell
 } from 'recharts';
-import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronRight } from 'lucide-react';
+import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType } from '../types';
 
 const DAY_COLORS: Record<DayType, string> = {
-  push: '#6366f1',
-  pull: '#8b5cf6',
-  legs: '#a855f7',
-  upper: '#3b82f6',
-  lower: '#06b6d4',
+  push: '#e5e5e5',
+  pull: '#a3a3a3',
+  legs: '#737373',
+  upper: '#d4d4d4',
+  lower: '#525252',
 };
 
 const DAY_LABELS: Record<DayType, string> = {
@@ -74,188 +74,185 @@ export default function Dashboard() {
         }))
     : [];
 
+  const tooltipStyle = {
+    contentStyle: { background: '#262626', border: '1px solid #404040', borderRadius: 8 },
+    labelStyle: { color: '#fafafa' },
+    itemStyle: { color: '#a3a3a3' },
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 pb-20 space-y-6">
+    <div className="min-h-screen bg-[#171717]">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Welcome back, {currentUser.username}</p>
+      <div className="flex items-center gap-3 px-4 pt-10 pb-6">
+        <button
+          onClick={() => navigate('/home')}
+          className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
+        >
+          <ChevronLeft size={16} className="text-[#fafafa]" />
+        </button>
+        <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
+          STATS
+        </h1>
+        <div className="w-10" />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Sessions', value: totalSessions, icon: Calendar, color: 'text-indigo-500' },
-          { label: 'This Week', value: thisWeek, icon: TrendingUp, color: 'text-green-500' },
-          { label: 'Exercises', value: exercises.length, icon: Dumbbell, color: 'text-violet-500' },
-          { label: 'Personal Records', value: userPRs.length, icon: Trophy, color: 'text-yellow-500' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wider">{label}</p>
-              <Icon size={16} className={color} />
+      <div className="px-4 pb-12 space-y-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Total Sessions', value: totalSessions, icon: Calendar },
+            { label: 'This Week', value: thisWeek, icon: TrendingUp },
+            { label: 'Exercises', value: exercises.length, icon: Dumbbell },
+            { label: 'Personal Records', value: userPRs.length, icon: Trophy },
+          ].map(({ label, value, icon: Icon }) => (
+            <div key={label} className="bg-[#262626] rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-[#737373] uppercase tracking-wider">{label}</p>
+                <Icon size={16} className="text-[#737373]" />
+              </div>
+              <p className="text-2xl font-bold text-[#fafafa]">{value}</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick navigate */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Training Days</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {trainingDays.map(d => {
-            const count = userSets.filter(ws => ws.dayType === d.type).length;
-            return (
-              <button
-                key={d.type}
-                onClick={() => navigate(`/${d.type}`)}
-                className="bg-white border border-gray-200 hover:border-gray-300 rounded-xl p-4 text-left transition-all group shadow-sm"
-                style={{ borderTopWidth: 3, borderTopColor: DAY_COLORS[d.type] }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: DAY_COLORS[d.type] }}>
-                    {d.label}
-                  </span>
-                  <ChevronRight size={12} className="text-gray-300 group-hover:text-gray-400 transition-colors" />
-                </div>
-                <p className="text-xl font-bold text-gray-900">{d.exerciseIds.length}</p>
-                <p className="text-xs text-gray-400 mt-0.5">exercises</p>
-                <p className="text-xs text-gray-400 mt-1">{count} sessions</p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sessions by day */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Sessions by Day Type</h3>
-          {byDay.some(d => d.sessions > 0) ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={byDay} barSize={28}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}
-                  labelStyle={{ color: '#1e293b' }}
-                  itemStyle={{ color: '#64748b' }}
-                />
-                <Bar dataKey="sessions" radius={[4, 4, 0, 0]}>
-                  {byDay.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-              Log workouts to see data
-            </div>
-          )}
+          ))}
         </div>
 
-        {/* Volume over time */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Volume (last 30 days)</h3>
-          {last30.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={last30}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}
-                  labelStyle={{ color: '#1e293b' }}
-                  itemStyle={{ color: '#64748b' }}
-                  formatter={(v: number) => [`${v.toLocaleString()} kg`, 'Volume']}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="volume"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  dot={{ fill: '#6366f1', strokeWidth: 0, r: 3 }}
-                  activeDot={{ r: 5, fill: '#818cf8' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-              Log workouts to see data
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Exercise progress */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-700">Exercise Progress</h3>
-          <select
-            value={selectedExercise}
-            onChange={e => setSelectedExercise(e.target.value)}
-            className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-indigo-400 transition-colors"
-          >
-            <option value="">Select exercise...</option>
-            {exerciseOptions.map(e => (
-              <option key={e.id} value={e.id}>{e.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {progressData.length > 1 ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={progressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}
-                labelStyle={{ color: '#1e293b' }}
-                itemStyle={{ color: '#64748b' }}
-              />
-              <Legend wrapperStyle={{ paddingTop: 16 }} />
-              <Line type="monotone" dataKey="maxWeight" name="Max Weight (kg)" stroke="#6366f1" strokeWidth={2} dot={{ fill: '#6366f1', r: 3 }} activeDot={{ r: 5 }} />
-              <Line type="monotone" dataKey="sets" name="Sets" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6', r: 3 }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : selectedExercise ? (
-          <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-            Need at least 2 sessions to show progress
-          </div>
-        ) : (
-          <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-            Select an exercise to view progress
-          </div>
-        )}
-      </div>
-
-      {/* Personal Records */}
-      {userPRs.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-            <Trophy size={14} className="text-yellow-500" /> Personal Records
-          </h3>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {userPRs.map(pr => {
-              const exerciseId = pr.exerciseId.split(':').slice(1).join(':');
-              const exercise = exercises.find(e => e.id === exerciseId);
-              if (!exercise) return null;
+        {/* Quick navigate */}
+        <div>
+          <h2 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Training Days</h2>
+          <div className="grid grid-cols-5 gap-2">
+            {trainingDays.map(d => {
+              const count = userSets.filter(ws => ws.dayType === d.type).length;
               return (
-                <div key={pr.exerciseId} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <p className="text-xs text-gray-500 truncate">{exercise.name}</p>
-                  <p className="text-lg font-bold text-yellow-500 mt-1">{pr.weight}kg</p>
-                  <p className="text-xs text-gray-400">{pr.reps} reps · {formatDate(pr.date)}</p>
-                </div>
+                <button
+                  key={d.type}
+                  onClick={() => navigate(`/${d.type}`)}
+                  className="bg-[#262626] rounded-xl p-3 text-center transition-all active:scale-95 hover:bg-[#2e2e2e]"
+                >
+                  <p className="text-xs font-semibold text-[#fafafa] uppercase">{d.label}</p>
+                  <p className="text-lg font-bold text-[#fafafa] mt-1">{d.exerciseIds.length}</p>
+                  <p className="text-xs text-[#737373]">{count}x</p>
+                </button>
               );
             })}
           </div>
         </div>
-      )}
+
+        {/* Charts */}
+        <div className="space-y-4">
+          <div className="bg-[#262626] rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">Sessions by Day Type</h3>
+            {byDay.some(d => d.sessions > 0) ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={byDay} barSize={28}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                  <XAxis dataKey="name" tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="sessions" radius={[4, 4, 0, 0]}>
+                    {byDay.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
+                Log workouts to see data
+              </div>
+            )}
+          </div>
+
+          <div className="bg-[#262626] rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">Volume (last 30 days)</h3>
+            {last30.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={last30}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                  <XAxis dataKey="date" tick={{ fill: '#737373', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#737373', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    {...tooltipStyle}
+                    formatter={(v: number) => [`${v.toLocaleString()} kg`, 'Volume']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="volume"
+                    stroke="#e5e5e5"
+                    strokeWidth={2}
+                    dot={{ fill: '#e5e5e5', strokeWidth: 0, r: 3 }}
+                    activeDot={{ r: 5, fill: '#fafafa' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
+                Log workouts to see data
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Exercise progress */}
+        <div className="bg-[#262626] rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-[#fafafa]">Exercise Progress</h3>
+            <select
+              value={selectedExercise}
+              onChange={e => setSelectedExercise(e.target.value)}
+              className="bg-[#171717] border border-[#404040] rounded-lg px-3 py-1.5 text-sm text-[#fafafa] focus:outline-none focus:border-[#737373] transition-colors"
+            >
+              <option value="">Select exercise...</option>
+              {exerciseOptions.map(e => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {progressData.length > 1 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={progressData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                <XAxis dataKey="date" tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip {...tooltipStyle} />
+                <Legend wrapperStyle={{ paddingTop: 16, color: '#a3a3a3' }} />
+                <Line type="monotone" dataKey="maxWeight" name="Max Weight (kg)" stroke="#e5e5e5" strokeWidth={2} dot={{ fill: '#e5e5e5', r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="sets" name="Sets" stroke="#737373" strokeWidth={2} dot={{ fill: '#737373', r: 3 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : selectedExercise ? (
+            <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
+              Need at least 2 sessions to show progress
+            </div>
+          ) : (
+            <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
+              Select an exercise to view progress
+            </div>
+          )}
+        </div>
+
+        {/* Personal Records */}
+        {userPRs.length > 0 && (
+          <div className="bg-[#262626] rounded-2xl p-5">
+            <h3 className="text-sm font-semibold text-[#fafafa] mb-4 flex items-center gap-2">
+              <Trophy size={14} className="text-yellow-400" /> Personal Records
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {userPRs.map(pr => {
+                const exerciseId = pr.exerciseId.split(':').slice(1).join(':');
+                const exercise = exercises.find(e => e.id === exerciseId);
+                if (!exercise) return null;
+                return (
+                  <div key={pr.exerciseId} className="bg-[#171717] rounded-xl p-3 border border-[#404040]">
+                    <p className="text-xs text-[#737373] truncate">{exercise.name}</p>
+                    <p className="text-lg font-bold text-yellow-400 mt-1">{pr.weight}kg</p>
+                    <p className="text-xs text-[#525252]">{pr.reps} reps · {formatDate(pr.date)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
