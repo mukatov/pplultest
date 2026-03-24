@@ -7,6 +7,19 @@ import {
 import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
+import { DayType } from '../types';
+
+const DAY_COLORS: Record<DayType, string> = {
+  push: '#e5e5e5',
+  pull: '#a3a3a3',
+  legs: '#737373',
+  upper: '#d4d4d4',
+  lower: '#525252',
+};
+
+const DAY_LABELS: Record<DayType, string> = {
+  push: 'Push', pull: 'Pull', legs: 'Legs', upper: 'Upper', lower: 'Lower',
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -31,9 +44,9 @@ export default function Dashboard() {
   const thisWeek = userSets.filter(ws => new Date(ws.date) > weekAgo).length;
 
   const byDay = trainingDays.map(d => ({
-    name: d.label,
+    name: DAY_LABELS[d.type],
     sessions: userSets.filter(ws => ws.dayType === d.type).length,
-    color: d.color,
+    color: DAY_COLORS[d.type],
   }));
 
   const last30 = Array.from({ length: 30 }, (_, i) => {

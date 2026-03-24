@@ -5,14 +5,14 @@ import { useAuthStore } from '../store/authStore';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const result = login(email, password);
+    const result = login(username, password);
     if (result.success) {
       navigate('/home');
     } else {
@@ -36,24 +36,19 @@ export default function Login() {
           )}
 
           <div>
-            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Email</label>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Username</label>
             <input
               autoFocus
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Enter your username"
               className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Password</label>
-              <Link to="/forgot-password" className="text-xs text-[#737373] hover:text-[#fafafa] transition-colors">
-                Forgot password?
-              </Link>
-            </div>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Password</label>
             <input
               type="password"
               value={password}

@@ -4,11 +4,11 @@ import { Exercise, WorkoutSet, TrainingDay, PersonalRecord, DayType, SetEntry } 
 import { DEFAULT_EXERCISES } from '../data/exercises';
 
 const DEFAULT_DAYS: TrainingDay[] = [
-  { type: 'push', label: 'Push', color: '#e5e5e5', description: 'Chest · Shoulders · Triceps', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] },
-  { type: 'pull', label: 'Pull', color: '#a3a3a3', description: 'Back · Biceps · Rear Delts', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] },
-  { type: 'legs', label: 'Legs', color: '#737373', description: 'Quads · Hamstrings · Glutes · Calves', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
-  { type: 'upper', label: 'Upper', color: '#d4d4d4', description: 'Full Upper Body', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] },
-  { type: 'lower', label: 'Lower', color: '#525252', description: 'Full Lower Body', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
+  { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] },
+  { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] },
+  { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
+  { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] },
+  { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
 ];
 
 interface WorkoutState {
@@ -26,8 +26,6 @@ interface WorkoutState {
   getWorkoutHistory: (exerciseId: string, userId: string) => WorkoutSet[];
 
   updateDayExercises: (dayType: DayType, exerciseIds: string[]) => void;
-  addTrainingDay: (day: TrainingDay) => void;
-  removeTrainingDay: (type: string) => void;
 
   getPersonalRecord: (exerciseId: string, userId: string) => PersonalRecord | undefined;
 }
@@ -109,12 +107,6 @@ export const useWorkoutStore = create<WorkoutState>()(
             d.type === dayType ? { ...d, exerciseIds } : d
           ),
         })),
-
-      addTrainingDay: (day) =>
-        set(state => ({ trainingDays: [...state.trainingDays, day] })),
-
-      removeTrainingDay: (type) =>
-        set(state => ({ trainingDays: state.trainingDays.filter(d => d.type !== type) })),
 
       getPersonalRecord: (exerciseId, userId) => {
         const { personalRecords } = get();

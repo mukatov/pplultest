@@ -3,15 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trophy, ChevronLeft, Clock } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { Exercise } from '../types';
+import { DayType, Exercise } from '../types';
 import LogWorkoutModal from '../components/LogWorkoutModal';
 import AddExerciseModal from '../components/AddExerciseModal';
 import EditDayModal from '../components/EditDayModal';
 
+const DAY_DESCRIPTIONS: Record<DayType, string> = {
+  push:  'Chest · Shoulders · Triceps',
+  pull:  'Back · Biceps · Rear Delts',
+  legs:  'Quads · Hamstrings · Glutes · Calves',
+  upper: 'Full Upper Body',
+  lower: 'Full Lower Body',
+};
+
 export default function TrainingDay() {
   const { day } = useParams<{ day: string }>();
   const navigate = useNavigate();
-  const dayType = day ?? '';
+  const dayType = day as DayType;
   const { exercises, trainingDays, getLastWorkout, getPersonalRecord, updateDayExercises } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
@@ -59,9 +67,7 @@ export default function TrainingDay() {
             <Pencil size={16} className="text-[#fafafa]" />
           </button>
         </div>
-        {trainingDay?.description && (
-          <p className="text-center text-sm text-[#737373] -mt-2">{trainingDay.description}</p>
-        )}
+        <p className="text-center text-sm text-[#737373] -mt-2">{DAY_DESCRIPTIONS[dayType]}</p>
       </div>
 
       {/* Exercise list */}

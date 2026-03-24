@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +17,7 @@ export default function Register() {
       setError('Passwords do not match');
       return;
     }
-    const result = register(email, password);
+    const result = register(username, password);
     if (result.success) {
       navigate('/home');
     } else {
@@ -41,13 +41,13 @@ export default function Register() {
           )}
 
           <div>
-            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Email</label>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Username</label>
             <input
               autoFocus
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Choose a username"
               className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
           </div>
