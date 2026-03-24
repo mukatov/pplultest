@@ -26,8 +26,9 @@ function Stepper({
   label: string;
   unit?: string;
 }) {
-  const dec = () => onChange(Math.max(min, parseFloat((value - step).toFixed(2))));
-  const inc = () => onChange(parseFloat((value + step).toFixed(2)));
+  const haptic = () => navigator.vibrate?.(8);
+  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); haptic(); };
+  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); haptic(); };
 
   const dragRef = useRef<{ lastY: number; dragging: boolean } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
