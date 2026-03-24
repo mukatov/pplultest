@@ -19,7 +19,7 @@ export default function Dashboard() {
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { exercises, workoutSets, personalRecords } = useWorkoutStore();
-  const trainingDays = splits.find(s => s.id === activeSplitId)?.sessions ?? [];
+  const trainingDays = splits.find(s => s.id === activeSplitId)?.days ?? [];
   const { currentUser } = useAuthStore();
 
   const [selectedExercise, setSelectedExercise] = useState<string>('');

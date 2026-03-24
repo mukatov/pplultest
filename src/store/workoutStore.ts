@@ -1,50 +1,43 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Exercise, WorkoutSet, Session, Split, PersonalRecord, DayType, SetEntry } from '../types';
+import { Exercise, WorkoutSet, Day, Split, PersonalRecord, DayType, SetEntry } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
 
-const PUSH_SESSIONS: Session = { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] };
-const PULL_SESSION: Session = { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] };
-const LEGS_SESSION: Session = { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
-const UPPER_SESSION: Session = { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] };
-const LOWER_SESSION: Session = { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
+const PUSH_DAY: Day = { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] };
+const PULL_DAY: Day = { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] };
+const LEGS_DAY: Day = { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
+const UPPER_DAY: Day = { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] };
+const LOWER_DAY: Day = { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
 
 export const BUILT_IN_SPLITS: Split[] = [
   {
     id: 'pplul',
     name: 'PPL/UL',
     isBuiltIn: true,
-    sessions: [PUSH_SESSIONS, PULL_SESSION, LEGS_SESSION, UPPER_SESSION, LOWER_SESSION],
+    days: [PUSH_DAY, PULL_DAY, LEGS_DAY, UPPER_DAY, LOWER_DAY],
   },
   {
     id: 'ppl',
     name: 'PPL',
     isBuiltIn: true,
-    sessions: [
-      { ...PUSH_SESSIONS },
-      { ...PULL_SESSION },
-      { ...LEGS_SESSION },
-    ],
+    days: [{ ...PUSH_DAY }, { ...PULL_DAY }, { ...LEGS_DAY }],
   },
   {
     id: 'ul',
     name: 'UL',
     isBuiltIn: true,
-    sessions: [
-      { ...UPPER_SESSION },
-      { ...LOWER_SESSION },
-    ],
+    days: [{ ...UPPER_DAY }, { ...LOWER_DAY }],
   },
   {
     id: 'bro',
     name: 'Bro Split',
     isBuiltIn: true,
-    sessions: [
-      { type: 'chest', label: 'Chest', color: 'rose', exerciseIds: ['bench-press', 'incline-bench', 'cable-fly', 'dips', 'front-raise'] },
-      { type: 'back', label: 'Back', color: 'emerald', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'seated-row', 'face-pull'] },
-      { type: 'legs-bro', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
-      { type: 'shoulders', label: 'Shoulders', color: 'amber', exerciseIds: ['overhead-press', 'lateral-raise', 'face-pull'] },
-      { type: 'arms', label: 'Arms', color: 'yellow', exerciseIds: ['barbell-curl', 'hammer-curl', 'tricep-pushdown', 'skull-crusher'] },
+    days: [
+      { type: 'chest',     label: 'Chest',     color: 'rose',    exerciseIds: ['bench-press', 'incline-bench', 'cable-fly', 'dips', 'front-raise'] },
+      { type: 'back',      label: 'Back',       color: 'emerald', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'seated-row', 'face-pull'] },
+      { type: 'legs-bro',  label: 'Legs',       color: 'purple',  exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
+      { type: 'shoulders', label: 'Shoulders',  color: 'amber',   exerciseIds: ['overhead-press', 'lateral-raise', 'face-pull'] },
+      { type: 'arms',      label: 'Arms',       color: 'yellow',  exerciseIds: ['barbell-curl', 'hammer-curl', 'tricep-pushdown', 'skull-crusher'] },
     ],
   },
 ];
@@ -99,9 +92,9 @@ export const useWorkoutStore = create<WorkoutState>()(
           exercises: state.exercises.filter(e => e.id !== id),
           splits: state.splits.map(split => ({
             ...split,
-            sessions: split.sessions.map(s => ({
-              ...s,
-              exerciseIds: s.exerciseIds.filter(eid => eid !== id),
+            days: split.days.map(d => ({
+              ...d,
+              exerciseIds: d.exerciseIds.filter(eid => eid !== id),
             })),
           })),
         })),
@@ -152,8 +145,8 @@ export const useWorkoutStore = create<WorkoutState>()(
             split.id === state.activeSplitId
               ? {
                   ...split,
-                  sessions: split.sessions.map(s =>
-                    s.type === dayType ? { ...s, exerciseIds } : s
+                  days: split.days.map(d =>
+                    d.type === dayType ? { ...d, exerciseIds } : d
                   ),
                 }
               : split

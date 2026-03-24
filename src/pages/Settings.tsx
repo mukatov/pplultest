@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, Check, Trash2, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
-import { Split, Session } from '../types';
+import { Split, Day } from '../types';
 
 const COLOR_OPTIONS = [
   { name: 'indigo', bg: 'bg-indigo-500' },
@@ -17,13 +17,13 @@ const COLOR_OPTIONS = [
   { name: 'pink', bg: 'bg-pink-500' },
 ];
 
-interface SessionDraft {
+interface DayDraft {
   label: string;
   color: string;
   exerciseIds: string[];
 }
 
-const EMPTY_SESSION: SessionDraft = { label: '', color: 'indigo', exerciseIds: [] };
+const EMPTY_DAY: DayDraft = { label: '', color: 'indigo', exerciseIds: [] };
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -31,46 +31,46 @@ export default function Settings() {
 
   const [creating, setCreating] = useState(false);
   const [splitName, setSplitName] = useState('');
-  const [sessions, setSessions] = useState<SessionDraft[]>([{ ...EMPTY_SESSION }]);
+  const [days, setDays] = useState<DayDraft[]>([{ ...EMPTY_DAY }]);
   const [createError, setCreateError] = useState('');
 
   const handleCreate = () => {
     setCreateError('');
     if (!splitName.trim()) { setCreateError('Split name is required'); return; }
-    if (sessions.some(s => !s.label.trim())) { setCreateError('All sessions need a name'); return; }
-    if (sessions.length === 0) { setCreateError('Add at least one session'); return; }
+    if (days.some(d => !d.label.trim())) { setCreateError('All days need a name'); return; }
+    if (days.length === 0) { setCreateError('Add at least one day'); return; }
 
     const newSplit: Split = {
       id: crypto.randomUUID(),
       name: splitName.trim(),
       isBuiltIn: false,
-      sessions: sessions.map(s => ({
-        type: s.label.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
-        label: s.label.trim(),
-        color: s.color,
-        exerciseIds: s.exerciseIds,
-      } as Session)),
+      days: days.map(d => ({
+        type: d.label.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+        label: d.label.trim(),
+        color: d.color,
+        exerciseIds: d.exerciseIds,
+      } as Day)),
     };
     addSplit(newSplit);
     setActiveSplit(newSplit.id);
     setSplitName('');
-    setSessions([{ ...EMPTY_SESSION }]);
+    setDays([{ ...EMPTY_DAY }]);
     setCreating(false);
   };
 
-  const updateSession = (idx: number, patch: Partial<SessionDraft>) => {
-    setSessions(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
+  const updateDay = (idx: number, patch: Partial<DayDraft>) => {
+    setDays(prev => prev.map((d, i) => i === idx ? { ...d, ...patch } : d));
   };
 
-  const removeSession = (idx: number) => {
-    setSessions(prev => prev.filter((_, i) => i !== idx));
+  const removeDay = (idx: number) => {
+    setDays(prev => prev.filter((_, i) => i !== idx));
   };
 
   const toggleExercise = (idx: number, exerciseId: string) => {
-    setSessions(prev => prev.map((s, i) => {
-      if (i !== idx) return s;
-      const has = s.exerciseIds.includes(exerciseId);
-      return { ...s, exerciseIds: has ? s.exerciseIds.filter(id => id !== exerciseId) : [...s.exerciseIds, exerciseId] };
+    setDays(prev => prev.map((d, i) => {
+      if (i !== idx) return d;
+      const has = d.exerciseIds.includes(exerciseId);
+      return { ...d, exerciseIds: has ? d.exerciseIds.filter(id => id !== exerciseId) : [...d.exerciseIds, exerciseId] };
     }));
   };
 
@@ -107,7 +107,7 @@ export default function Settings() {
               <div>
                 <p className="text-[#fafafa] font-medium text-sm">{split.name}</p>
                 <p className="text-[#525252] text-xs mt-0.5">
-                  {split.sessions.map(s => s.label).join(' · ')}
+                  {split.days.map(d => d.label).join(' · ')}
                 </p>
               </div>
             </button>
@@ -156,19 +156,19 @@ export default function Settings() {
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-[#737373] uppercase tracking-wider font-medium">Sessions</p>
-              {sessions.map((session, idx) => (
+              <p className="text-xs text-[#737373] uppercase tracking-wider font-medium">Days</p>
+              {days.map((day, idx) => (
                 <div key={idx} className="bg-[#171717] rounded-xl p-3 space-y-3">
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={session.label}
-                      onChange={e => updateSession(idx, { label: e.target.value })}
-                      placeholder={`Session ${idx + 1} name`}
+                      value={day.label}
+                      onChange={e => updateDay(idx, { label: e.target.value })}
+                      placeholder={`Day ${idx + 1} name`}
                       className="flex-1 bg-[#262626] border border-[#404040] rounded-lg px-3 py-2 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
                     />
-                    {sessions.length > 1 && (
-                      <button onClick={() => removeSession(idx)} className="text-[#525252] hover:text-red-400 transition-colors">
+                    {days.length > 1 && (
+                      <button onClick={() => removeDay(idx)} className="text-[#525252] hover:text-red-400 transition-colors">
                         <X size={15} />
                       </button>
                     )}
@@ -179,20 +179,20 @@ export default function Settings() {
                     {COLOR_OPTIONS.map(c => (
                       <button
                         key={c.name}
-                        onClick={() => updateSession(idx, { color: c.name })}
-                        className={`w-6 h-6 rounded-full ${c.bg} flex items-center justify-center transition-transform ${session.color === c.name ? 'ring-2 ring-white ring-offset-1 ring-offset-[#171717] scale-110' : ''}`}
+                        onClick={() => updateDay(idx, { color: c.name })}
+                        className={`w-6 h-6 rounded-full ${c.bg} flex items-center justify-center transition-transform ${day.color === c.name ? 'ring-2 ring-white ring-offset-1 ring-offset-[#171717] scale-110' : ''}`}
                       >
-                        {session.color === c.name && <Check size={11} className="text-white" strokeWidth={3} />}
+                        {day.color === c.name && <Check size={11} className="text-white" strokeWidth={3} />}
                       </button>
                     ))}
                   </div>
 
                   {/* Exercise picker */}
                   <div>
-                    <p className="text-xs text-[#525252] mb-2">Exercises ({session.exerciseIds.length} selected)</p>
+                    <p className="text-xs text-[#525252] mb-2">Exercises ({day.exerciseIds.length} selected)</p>
                     <div className="max-h-40 overflow-y-auto space-y-1">
                       {exercises.map(ex => {
-                        const checked = session.exerciseIds.includes(ex.id);
+                        const checked = day.exerciseIds.includes(ex.id);
                         return (
                           <button
                             key={ex.id}
@@ -212,11 +212,11 @@ export default function Settings() {
               ))}
 
               <button
-                onClick={() => setSessions(prev => [...prev, { ...EMPTY_SESSION }])}
+                onClick={() => setDays(prev => [...prev, { ...EMPTY_DAY }])}
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-[#404040] text-[#737373] text-xs hover:border-[#525252] transition-colors"
               >
                 <Plus size={13} />
-                Add session
+                Add day
               </button>
             </div>
 

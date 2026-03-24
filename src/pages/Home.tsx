@@ -13,9 +13,9 @@ export default function Home() {
   const { currentUser, logout } = useAuthStore();
 
   const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
-  const sessions = activeSplit?.sessions ?? [];
+  const days = activeSplit?.days ?? [];
 
-  const [selected, setSelected] = useState<string>(sessions[0]?.type ?? '');
+  const [selected, setSelected] = useState<string>(days[0]?.type ?? '');
   const cardRefs = useRef<Record<string, HTMLButtonElement>>({});
 
   if (!currentUser) return null;
@@ -34,15 +34,15 @@ export default function Home() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const containerCenter = container.scrollLeft + container.clientWidth / 2;
-    let closest = sessions[0]?.type ?? '';
+    let closest = days[0]?.type ?? '';
     let minDist = Infinity;
-    for (const session of sessions) {
-      const el = cardRefs.current[session.type];
+    for (const day of days) {
+      const el = cardRefs.current[day.type];
       if (!el) continue;
       const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - containerCenter);
       if (dist < minDist) {
         minDist = dist;
-        closest = session.type;
+        closest = day.type;
       }
     }
     if (closest) setSelected(closest);
@@ -86,16 +86,16 @@ export default function Home() {
           }}
           onScroll={handleScroll}
         >
-          {sessions.map(session => {
-            const isSelected = selected === session.type;
-            const count = session.exerciseIds.length;
+          {days.map(day => {
+            const isSelected = selected === day.type;
+            const count = day.exerciseIds.length;
             return (
               <button
-                key={session.type}
-                ref={el => { if (el) cardRefs.current[session.type] = el; }}
+                key={day.type}
+                ref={el => { if (el) cardRefs.current[day.type] = el; }}
                 onClick={() => {
-                  setSelected(session.type);
-                  cardRefs.current[session.type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  setSelected(day.type);
+                  cardRefs.current[day.type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }}
                 style={{ scrollSnapAlign: 'center' }}
                 className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all active:scale-95 ${
@@ -105,7 +105,7 @@ export default function Home() {
                 }`}
               >
                 <span className={`font-semibold tracking-[-1px] ${isSelected ? 'text-3xl' : 'text-2xl'}`}>
-                  {session.label.toUpperCase()}
+                  {day.label.toUpperCase()}
                 </span>
                 <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#a3a3a3]'}`}>
                   {count} exercises

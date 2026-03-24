@@ -28,19 +28,19 @@ export interface WorkoutSet {
   dayType: DayType;
 }
 
-export interface Session {
+export interface Day {
   type: string;
   label: string;
   color: string;
   exerciseIds: string[];
 }
 
-export type TrainingDay = Session;
+export type TrainingDay = Day;
 
 export interface Split {
   id: string;
   name: string;
-  sessions: Session[];
+  days: Day[];
   isBuiltIn: boolean;
 }
 
