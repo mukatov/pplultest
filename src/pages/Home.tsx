@@ -2,19 +2,21 @@ import { useState, useRef } from 'react';
 import { Play, Settings, LogOut } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { DayType } from '../types';
 import { useNavigate } from 'react-router-dom';
-
-const DAY_TYPES: DayType[] = ['push', 'pull', 'legs', 'upper', 'lower'];
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 export default function Home() {
   const navigate = useNavigate();
-  const { trainingDays } = useWorkoutStore();
+  const splits = useWorkoutStore(s => s.splits);
+  const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { currentUser, logout } = useAuthStore();
-  const [selected, setSelected] = useState<DayType>('push');
-  const cardRefs = useRef<Partial<Record<DayType, HTMLButtonElement>>>({});
+
+  const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
+  const days = activeSplit?.days ?? [];
+
+  const [selected, setSelected] = useState<string>(days[0]?.type ?? '');
+  const cardRefs = useRef<Record<string, HTMLButtonElement>>({});
 
   if (!currentUser) return null;
 
@@ -29,9 +31,22 @@ export default function Home() {
     navigate('/login');
   };
 
-  function exerciseCount(type: DayType) {
-    return trainingDays.find(d => d.type === type)?.exerciseIds.length ?? 0;
-  }
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const containerCenter = container.scrollLeft + container.clientWidth / 2;
+    let closest = days[0]?.type ?? '';
+    let minDist = Infinity;
+    for (const day of days) {
+      const el = cardRefs.current[day.type];
+      if (!el) continue;
+      const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - containerCenter);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = day.type;
+      }
+    }
+    if (closest) setSelected(closest);
+  };
 
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col">
@@ -44,10 +59,10 @@ export default function Home() {
           <LogOut size={16} className="text-[#fafafa]" />
         </button>
         <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
-          PPL/UL
+          {activeSplit?.name ?? 'PPL/UL'}
         </h1>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/settings')}
           className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
         >
           <Settings size={16} className="text-[#fafafa]" />
@@ -55,30 +70,32 @@ export default function Home() {
       </div>
 
       {/* Center content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 px-4">
-        <p className="text-lg font-semibold text-[#fafafa] text-center">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8">
+        <p className="text-lg font-semibold text-[#fafafa] text-center px-4">
           What workout are we doing today?
         </p>
 
         {/* Carousel */}
-        <div className="flex items-center gap-3 overflow-x-auto w-full pb-2"
+        <div
+          className="flex items-center gap-3 overflow-x-auto w-full pb-2"
           style={{
             scrollbarWidth: 'none',
             scrollSnapType: 'x mandatory',
             paddingLeft: 'calc(50vw - 100px)',
             paddingRight: 'calc(50vw - 100px)',
           }}
+          onScroll={handleScroll}
         >
-          {DAY_TYPES.map(type => {
-            const isSelected = selected === type;
-            const count = exerciseCount(type);
+          {days.map(day => {
+            const isSelected = selected === day.type;
+            const count = day.exerciseIds.length;
             return (
               <button
-                key={type}
-                ref={el => { if (el) cardRefs.current[type] = el; }}
+                key={day.type}
+                ref={el => { if (el) cardRefs.current[day.type] = el; }}
                 onClick={() => {
-                  setSelected(type);
-                  cardRefs.current[type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                  setSelected(day.type);
+                  cardRefs.current[day.type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                 }}
                 style={{ scrollSnapAlign: 'center' }}
                 className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all active:scale-95 ${
@@ -88,7 +105,7 @@ export default function Home() {
                 }`}
               >
                 <span className={`font-semibold tracking-[-1px] ${isSelected ? 'text-3xl' : 'text-2xl'}`}>
-                  {type.toUpperCase()}
+                  {day.label.toUpperCase()}
                 </span>
                 <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#a3a3a3]'}`}>
                   {count} exercises

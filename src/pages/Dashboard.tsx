@@ -7,19 +7,8 @@ import {
 import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { DayType } from '../types';
 
-const DAY_COLORS: Record<DayType, string> = {
-  push: '#e5e5e5',
-  pull: '#a3a3a3',
-  legs: '#737373',
-  upper: '#d4d4d4',
-  lower: '#525252',
-};
-
-const DAY_LABELS: Record<DayType, string> = {
-  push: 'Push', pull: 'Pull', legs: 'Legs', upper: 'Upper', lower: 'Lower',
-};
+const SESSION_COLORS = ['#e5e5e5', '#a3a3a3', '#737373', '#d4d4d4', '#525252', '#b0b0b0', '#909090'];
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -27,7 +16,10 @@ function formatDate(iso: string) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { exercises, workoutSets, trainingDays, personalRecords } = useWorkoutStore();
+  const splits = useWorkoutStore(s => s.splits);
+  const activeSplitId = useWorkoutStore(s => s.activeSplitId);
+  const { exercises, workoutSets, personalRecords } = useWorkoutStore();
+  const trainingDays = splits.find(s => s.id === activeSplitId)?.days ?? [];
   const { currentUser } = useAuthStore();
 
   const [selectedExercise, setSelectedExercise] = useState<string>('');
@@ -43,10 +35,10 @@ export default function Dashboard() {
   weekAgo.setDate(weekAgo.getDate() - 7);
   const thisWeek = userSets.filter(ws => new Date(ws.date) > weekAgo).length;
 
-  const byDay = trainingDays.map(d => ({
-    name: DAY_LABELS[d.type],
+  const byDay = trainingDays.map((d, i) => ({
+    name: d.label,
     sessions: userSets.filter(ws => ws.dayType === d.type).length,
-    color: DAY_COLORS[d.type],
+    color: SESSION_COLORS[i % SESSION_COLORS.length],
   }));
 
   const last30 = Array.from({ length: 30 }, (_, i) => {

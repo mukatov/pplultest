@@ -84,7 +84,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
         </button>
         <div className="flex-1">
           <h1 className="text-base font-bold text-[#fafafa] leading-tight uppercase">Add Exercise</h1>
-          <p className="text-xs text-[#737373]">{dayLabel} session</p>
+          <p className="text-xs text-[#737373]">{dayLabel} day</p>
         </div>
       </div>
 

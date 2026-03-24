@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { DayType } from '../types';
 import { ChevronLeft } from 'lucide-react';
 
-const SESSION_TYPES: { type: DayType; label: string; subtitle: string }[] = [
+const DAY_TYPES: { type: DayType; label: string; subtitle: string }[] = [
   { type: 'push',  label: 'PUSH',  subtitle: 'Chest · Shoulders · Triceps' },
   { type: 'pull',  label: 'PULL',  subtitle: 'Back · Biceps' },
   { type: 'legs',  label: 'LEGS',  subtitle: 'Quads · Hamstrings · Calves' },
@@ -34,13 +34,13 @@ export default function StartSessionModal({ onClose }: Props) {
         </button>
         <div>
           <h1 className="text-base font-bold text-[#fafafa] leading-tight uppercase">Start Workout</h1>
-          <p className="text-xs text-[#737373]">Choose your session type</p>
+          <p className="text-xs text-[#737373]">Choose a workout day</p>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {SESSION_TYPES.map(({ type, label, subtitle }) => (
+        {DAY_TYPES.map(({ type, label, subtitle }) => (
           <button
             key={type}
             onClick={() => handlePick(type)}

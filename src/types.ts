@@ -1,8 +1,8 @@
-export type DayType = 'push' | 'pull' | 'legs' | 'upper' | 'lower';
+export type DayType = string;
 
 export interface User {
   id: string;
-  username: string;
+  email: string;
   passwordHash: string;
   createdAt: string;
 }
@@ -28,11 +28,20 @@ export interface WorkoutSet {
   dayType: DayType;
 }
 
-export interface TrainingDay {
-  type: DayType;
+export interface Day {
+  type: string;
   label: string;
   color: string;
   exerciseIds: string[];
+}
+
+export type TrainingDay = Day;
+
+export interface Split {
+  id: string;
+  name: string;
+  days: Day[];
+  isBuiltIn: boolean;
 }
 
 export interface PersonalRecord {
