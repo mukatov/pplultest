@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { User } from '../types';
 
 function hashPassword(password: string): string {
+  // Simple deterministic hash for demo purposes
   let hash = 0;
   for (let i = 0; i < password.length; i++) {
     const char = password.charCodeAt(i);
@@ -12,17 +13,12 @@ function hashPassword(password: string): string {
   return hash.toString(16);
 }
 
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 interface AuthState {
   currentUser: User | null;
   users: User[];
-  register: (email: string, password: string) => { success: boolean; error?: string };
-  login: (email: string, password: string) => { success: boolean; error?: string };
+  register: (username: string, password: string) => { success: boolean; error?: string };
+  login: (username: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
-  resetPassword: (email: string, newPassword: string) => { success: boolean; error?: string };
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,17 +27,17 @@ export const useAuthStore = create<AuthState>()(
       currentUser: null,
       users: [],
 
-      register: (email, password) => {
+      register: (username, password) => {
         const { users } = get();
-        if (!isValidEmail(email)) return { success: false, error: 'Invalid email address' };
-        if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-          return { success: false, error: 'Email already registered' };
+        if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+          return { success: false, error: 'Username already taken' };
         }
+        if (username.length < 3) return { success: false, error: 'Username must be at least 3 characters' };
         if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
 
         const user: User = {
           id: crypto.randomUUID(),
-          email,
+          username,
           passwordHash: hashPassword(password),
           createdAt: new Date().toISOString(),
         };
@@ -49,29 +45,16 @@ export const useAuthStore = create<AuthState>()(
         return { success: true };
       },
 
-      login: (email, password) => {
+      login: (username, password) => {
         const { users } = get();
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!user) return { success: false, error: 'Email not found' };
+        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (!user) return { success: false, error: 'User not found' };
         if (user.passwordHash !== hashPassword(password)) return { success: false, error: 'Wrong password' };
         set({ currentUser: user });
         return { success: true };
       },
 
       logout: () => set({ currentUser: null }),
-
-      resetPassword: (email, newPassword) => {
-        const { users } = get();
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!user) return { success: false, error: 'Email not found' };
-        if (newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
-        const updated = { ...user, passwordHash: hashPassword(newPassword) };
-        set(state => ({
-          users: state.users.map(u => u.id === user.id ? updated : u),
-          currentUser: state.currentUser?.id === user.id ? updated : state.currentUser,
-        }));
-        return { success: true };
-      },
     }),
     { name: 'ppl-auth' }
   )
