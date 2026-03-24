@@ -3,33 +3,28 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trophy, ChevronLeft, Clock } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { DayType, Exercise } from '../types';
+import { Exercise } from '../types';
 import LogWorkoutModal from '../components/LogWorkoutModal';
 import AddExerciseModal from '../components/AddExerciseModal';
 import EditDayModal from '../components/EditDayModal';
 
-const DAY_DESCRIPTIONS: Record<DayType, string> = {
-  push:  'Chest · Shoulders · Triceps',
-  pull:  'Back · Biceps · Rear Delts',
-  legs:  'Quads · Hamstrings · Glutes · Calves',
-  upper: 'Full Upper Body',
-  lower: 'Full Lower Body',
-};
-
 export default function TrainingDay() {
   const { day } = useParams<{ day: string }>();
   const navigate = useNavigate();
-  const dayType = day as DayType;
-  const { exercises, trainingDays, getLastWorkout, getPersonalRecord, updateDayExercises } = useWorkoutStore();
+  const dayType = day ?? '';
+
+  const splits = useWorkoutStore(s => s.splits);
+  const activeSplitId = useWorkoutStore(s => s.activeSplitId);
+  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
   const [logExerciseId, setLogExerciseId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
-  const trainingDay = trainingDays.find(d => d.type === dayType);
+  const activeSplit = splits.find(s => s.id === activeSplitId);
+  const trainingDay = activeSplit?.sessions.find(s => s.type === dayType);
   const dayExercises = exercises.filter(e => trainingDay?.exerciseIds.includes(e.id));
-
   const logExercise = logExerciseId ? exercises.find(e => e.id === logExerciseId) : null;
 
   function handleAddExercise(exercise: Exercise) {
@@ -58,7 +53,7 @@ export default function TrainingDay() {
             <ChevronLeft size={16} className="text-[#fafafa]" />
           </button>
           <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa] uppercase">
-            {dayType}
+            {trainingDay?.label ?? dayType}
           </h1>
           <button
             onClick={() => setShowEdit(true)}
@@ -67,7 +62,16 @@ export default function TrainingDay() {
             <Pencil size={16} className="text-[#fafafa]" />
           </button>
         </div>
-        <p className="text-center text-sm text-[#737373] -mt-2">{DAY_DESCRIPTIONS[dayType]}</p>
+        {trainingDay && (
+          <p className="text-center text-sm text-[#737373] -mt-2">
+            {exercises
+              .filter(e => trainingDay.exerciseIds.includes(e.id))
+              .flatMap(e => e.muscleGroups)
+              .filter((mg, i, arr) => arr.indexOf(mg) === i)
+              .slice(0, 4)
+              .join(' · ')}
+          </p>
+        )}
       </div>
 
       {/* Exercise list */}

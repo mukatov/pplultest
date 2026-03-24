@@ -5,14 +5,14 @@ import { useAuthStore } from '../store/authStore';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const result = login(username, password);
+    const result = login(email, password);
     if (result.success) {
       navigate('/home');
     } else {
@@ -36,13 +36,13 @@ export default function Login() {
           )}
 
           <div>
-            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Username</label>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Email</label>
             <input
               autoFocus
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your email"
               className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
           </div>
@@ -64,6 +64,12 @@ export default function Login() {
           >
             Sign In
           </button>
+
+          <p className="text-center text-sm text-[#737373]">
+            <Link to="/forgot-password" className="text-[#fafafa] hover:text-white transition-colors font-medium">
+              Forgot password?
+            </Link>
+          </p>
 
           <p className="text-center text-sm text-[#737373]">
             No account?{' '}

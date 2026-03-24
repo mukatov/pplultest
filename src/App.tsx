@@ -3,9 +3,11 @@ import { useAuthStore } from './store/authStore';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import TrainingDay from './pages/TrainingDay';
+import Settings from './pages/Settings';
 
 function AuthGuard() {
   const { currentUser } = useAuthStore();
@@ -26,10 +28,12 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><Register /></RedirectIfAuthed>} />
+        <Route path="/forgot-password" element={<RedirectIfAuthed><ForgotPassword /></RedirectIfAuthed>} />
         <Route element={<AuthGuard />}>
           <Route element={<Layout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/:day" element={<TrainingDay />} />
           </Route>
         </Route>

@@ -1,20 +1,59 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Exercise, WorkoutSet, TrainingDay, PersonalRecord, DayType, SetEntry } from '../types';
+import { Exercise, WorkoutSet, Session, Split, PersonalRecord, DayType, SetEntry } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
 
-const DEFAULT_DAYS: TrainingDay[] = [
-  { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] },
-  { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] },
-  { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
-  { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] },
-  { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
+const PUSH_SESSIONS: Session = { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] };
+const PULL_SESSION: Session = { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] };
+const LEGS_SESSION: Session = { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
+const UPPER_SESSION: Session = { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] };
+const LOWER_SESSION: Session = { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
+
+export const BUILT_IN_SPLITS: Split[] = [
+  {
+    id: 'pplul',
+    name: 'PPL/UL',
+    isBuiltIn: true,
+    sessions: [PUSH_SESSIONS, PULL_SESSION, LEGS_SESSION, UPPER_SESSION, LOWER_SESSION],
+  },
+  {
+    id: 'ppl',
+    name: 'PPL',
+    isBuiltIn: true,
+    sessions: [
+      { ...PUSH_SESSIONS },
+      { ...PULL_SESSION },
+      { ...LEGS_SESSION },
+    ],
+  },
+  {
+    id: 'ul',
+    name: 'UL',
+    isBuiltIn: true,
+    sessions: [
+      { ...UPPER_SESSION },
+      { ...LOWER_SESSION },
+    ],
+  },
+  {
+    id: 'bro',
+    name: 'Bro Split',
+    isBuiltIn: true,
+    sessions: [
+      { type: 'chest', label: 'Chest', color: 'rose', exerciseIds: ['bench-press', 'incline-bench', 'cable-fly', 'dips', 'front-raise'] },
+      { type: 'back', label: 'Back', color: 'emerald', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'seated-row', 'face-pull'] },
+      { type: 'legs-bro', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] },
+      { type: 'shoulders', label: 'Shoulders', color: 'amber', exerciseIds: ['overhead-press', 'lateral-raise', 'face-pull'] },
+      { type: 'arms', label: 'Arms', color: 'yellow', exerciseIds: ['barbell-curl', 'hammer-curl', 'tricep-pushdown', 'skull-crusher'] },
+    ],
+  },
 ];
 
 interface WorkoutState {
   exercises: Exercise[];
   workoutSets: WorkoutSet[];
-  trainingDays: TrainingDay[];
+  splits: Split[];
+  activeSplitId: string;
   personalRecords: PersonalRecord[];
 
   addExercise: (exercise: Exercise) => void;
@@ -25,12 +64,15 @@ interface WorkoutState {
   getLastWorkout: (exerciseId: string, userId: string) => WorkoutSet | undefined;
   getWorkoutHistory: (exerciseId: string, userId: string) => WorkoutSet[];
 
-  updateDayExercises: (dayType: DayType, exerciseIds: string[]) => void;
+  updateDayExercises: (dayType: string, exerciseIds: string[]) => void;
 
   getPersonalRecord: (exerciseId: string, userId: string) => PersonalRecord | undefined;
+
+  addSplit: (split: Split) => void;
+  deleteSplit: (id: string) => void;
+  setActiveSplit: (id: string) => void;
 }
 
-// Key for user-scoped data
 function scopedKey(key: string, userId: string) {
   return `${userId}:${key}`;
 }
@@ -40,7 +82,8 @@ export const useWorkoutStore = create<WorkoutState>()(
     (set, get) => ({
       exercises: DEFAULT_EXERCISES,
       workoutSets: [],
-      trainingDays: DEFAULT_DAYS,
+      splits: BUILT_IN_SPLITS,
+      activeSplitId: 'pplul',
       personalRecords: [],
 
       addExercise: (exercise) =>
@@ -54,9 +97,12 @@ export const useWorkoutStore = create<WorkoutState>()(
       deleteExercise: (id) =>
         set(state => ({
           exercises: state.exercises.filter(e => e.id !== id),
-          trainingDays: state.trainingDays.map(d => ({
-            ...d,
-            exerciseIds: d.exerciseIds.filter(eid => eid !== id),
+          splits: state.splits.map(split => ({
+            ...split,
+            sessions: split.sessions.map(s => ({
+              ...s,
+              exerciseIds: s.exerciseIds.filter(eid => eid !== id),
+            })),
           })),
         })),
 
@@ -70,7 +116,6 @@ export const useWorkoutStore = create<WorkoutState>()(
         };
         set(state => {
           const updated = [...state.workoutSets, entry];
-          // Update PR
           const maxWeight = Math.max(...sets.map(s => s.weight));
           const maxRepsAtMax = Math.max(...sets.filter(s => s.weight === maxWeight).map(s => s.reps));
           const prKey = scopedKey(exerciseId, userId);
@@ -103,8 +148,15 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       updateDayExercises: (dayType, exerciseIds) =>
         set(state => ({
-          trainingDays: state.trainingDays.map(d =>
-            d.type === dayType ? { ...d, exerciseIds } : d
+          splits: state.splits.map(split =>
+            split.id === state.activeSplitId
+              ? {
+                  ...split,
+                  sessions: split.sessions.map(s =>
+                    s.type === dayType ? { ...s, exerciseIds } : s
+                  ),
+                }
+              : split
           ),
         })),
 
@@ -113,6 +165,23 @@ export const useWorkoutStore = create<WorkoutState>()(
         const key = scopedKey(exerciseId, userId);
         return personalRecords.find(pr => pr.exerciseId === key);
       },
+
+      addSplit: (split) =>
+        set(state => ({ splits: [...state.splits, split] })),
+
+      deleteSplit: (id) =>
+        set(state => {
+          const target = state.splits.find(s => s.id === id);
+          if (!target || target.isBuiltIn) return state;
+          const newSplits = state.splits.filter(s => s.id !== id);
+          const newActiveId = state.activeSplitId === id
+            ? (newSplits[0]?.id ?? 'pplul')
+            : state.activeSplitId;
+          return { splits: newSplits, activeSplitId: newActiveId };
+        }),
+
+      setActiveSplit: (id) =>
+        set({ activeSplitId: id }),
     }),
     { name: 'ppl-workouts' }
   )

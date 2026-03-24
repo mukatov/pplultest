@@ -9,8 +9,11 @@ interface Props {
 }
 
 export default function EditDayModal({ dayType, onClose }: Props) {
-  const { exercises, trainingDays, updateDayExercises } = useWorkoutStore();
-  const day = trainingDays.find(d => d.type === dayType)!;
+  const splits = useWorkoutStore(s => s.splits);
+  const activeSplitId = useWorkoutStore(s => s.activeSplitId);
+  const { exercises, updateDayExercises } = useWorkoutStore();
+  const activeSessions = splits.find(s => s.id === activeSplitId)?.sessions ?? [];
+  const day = activeSessions.find(d => d.type === dayType)!;
   const [selected, setSelected] = useState<string[]>([...day.exerciseIds]);
   const [search, setSearch] = useState('');
 
