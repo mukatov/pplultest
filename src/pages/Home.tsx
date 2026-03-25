@@ -1,13 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Play, Settings, LogOut } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 export default function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { currentUser, logout } = useAuthStore();
@@ -15,20 +16,51 @@ export default function Home() {
   const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
   const days = activeSplit?.days ?? [];
 
-  const [selected, setSelected] = useState<string>(days[0]?.type ?? '');
-  const cardRefs = useRef<Record<string, HTMLButtonElement>>({});
+  const [selected, setSelected]     = useState<string>(days[0]?.type ?? '');
+  const [toast, setToast]           = useState<{ label: string; dayType: string } | null>(null);
+  const [countdown, setCountdown]   = useState(5);
+  const cardRefs  = useRef<Record<string, HTMLButtonElement>>({});
+  const toastTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Pick up finish state from navigation
+  useEffect(() => {
+    const state = location.state as { finishedDay?: string } | null;
+    if (state?.finishedDay) {
+      setToast({ label: state.finishedDay, dayType: selected });
+      setCountdown(5);
+      // Clear nav state so refresh doesn't re-show toast
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
+
+  // Countdown timer for toast
+  useEffect(() => {
+    if (!toast) return;
+    if (toastTimer.current) clearInterval(toastTimer.current);
+    toastTimer.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(toastTimer.current!);
+          setToast(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (toastTimer.current) clearInterval(toastTimer.current); };
+  }, [toast]);
 
   if (!currentUser) return null;
 
   const today = DAYS_OF_WEEK[new Date().getDay()];
 
-  const handleStart = () => {
-    navigate(`/${selected}`);
-  };
+  const handleStart = () => navigate(`/${selected}`);
+  const handleLogout = () => { logout(); navigate('/login'); };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleUndo = () => {
+    if (toastTimer.current) clearInterval(toastTimer.current);
+    setToast(null);
+    navigate(-1);
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -40,10 +72,7 @@ export default function Home() {
       const el = cardRefs.current[day.type];
       if (!el) continue;
       const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - containerCenter);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = day.type;
-      }
+      if (dist < minDist) { minDist = dist; closest = day.type; }
     }
     if (closest) setSelected(closest);
   };
@@ -116,9 +145,7 @@ export default function Home() {
         </div>
 
         {/* Day label */}
-        <p className="text-sm uppercase tracking-[1.5px] text-[#fafafa]">
-          {today}
-        </p>
+        <p className="text-sm uppercase tracking-[1.5px] text-[#fafafa]">{today}</p>
       </div>
 
       {/* Bottom CTA */}
@@ -131,6 +158,35 @@ export default function Home() {
           Start workout
         </button>
       </div>
+
+      {/* Finish toast */}
+      {toast && (
+        <div className="fixed bottom-24 left-4 right-4 z-50">
+          <div className="bg-[#1c1c1c] border border-[#4ade80]/30 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#4ade80] truncate">
+                {toast.label} session complete 🎉
+              </p>
+              <div className="flex items-center gap-1 mt-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1 rounded-full transition-all duration-1000 ${
+                      i < countdown ? 'bg-[#4ade80] w-5' : 'bg-[#333] w-5'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleUndo}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[#262626] text-[#fafafa] text-xs font-medium border border-[#404040] active:scale-[0.96]"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
