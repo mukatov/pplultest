@@ -3,6 +3,49 @@ import { persist } from 'zustand/middleware';
 import { Exercise, WorkoutSet, Day, Split, PersonalRecord, DayType, SetEntry } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
 
+const DEMO_UID = 'demo-user-001';
+function ds(eid: string) { return `${DEMO_UID}:${eid}`; }
+
+const DEMO_WORKOUT_SETS: WorkoutSet[] = [
+  // Bench Press
+  { id: 'demo-bp-1', exerciseId: ds('bench-press'), sets: [{weight:70,reps:8},{weight:70,reps:8},{weight:70,reps:7}], date: '2026-02-09T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-bp-2', exerciseId: ds('bench-press'), sets: [{weight:72.5,reps:8},{weight:72.5,reps:8},{weight:72.5,reps:8}], date: '2026-02-16T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-bp-3', exerciseId: ds('bench-press'), sets: [{weight:75,reps:7},{weight:75,reps:7},{weight:75,reps:8},{weight:75,reps:6}], date: '2026-02-23T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-bp-4', exerciseId: ds('bench-press'), sets: [{weight:75,reps:8},{weight:75,reps:8},{weight:75,reps:8},{weight:75,reps:7}], date: '2026-03-02T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-bp-5', exerciseId: ds('bench-press'), sets: [{weight:77.5,reps:7},{weight:77.5,reps:7},{weight:77.5,reps:7},{weight:77.5,reps:6}], date: '2026-03-09T10:00:00.000Z', dayType: 'upper' },
+  { id: 'demo-bp-6', exerciseId: ds('bench-press'), sets: [{weight:77.5,reps:8},{weight:77.5,reps:8},{weight:77.5,reps:7},{weight:77.5,reps:8}], date: '2026-03-16T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-bp-7', exerciseId: ds('bench-press'), sets: [{weight:80,reps:7},{weight:80,reps:7},{weight:80,reps:6},{weight:80,reps:7}], date: '2026-03-23T10:00:00.000Z', dayType: 'push' },
+  // Squat
+  { id: 'demo-sq-1', exerciseId: ds('squat'), sets: [{weight:90,reps:6},{weight:90,reps:6},{weight:90,reps:5}], date: '2026-02-10T10:00:00.000Z', dayType: 'legs' },
+  { id: 'demo-sq-2', exerciseId: ds('squat'), sets: [{weight:92.5,reps:6},{weight:92.5,reps:6},{weight:92.5,reps:6}], date: '2026-02-17T10:00:00.000Z', dayType: 'legs' },
+  { id: 'demo-sq-3', exerciseId: ds('squat'), sets: [{weight:95,reps:5},{weight:95,reps:5},{weight:95,reps:5},{weight:95,reps:5}], date: '2026-02-24T10:00:00.000Z', dayType: 'legs' },
+  { id: 'demo-sq-4', exerciseId: ds('squat'), sets: [{weight:97.5,reps:5},{weight:97.5,reps:5},{weight:97.5,reps:5},{weight:97.5,reps:4}], date: '2026-03-03T10:00:00.000Z', dayType: 'lower' },
+  { id: 'demo-sq-5', exerciseId: ds('squat'), sets: [{weight:100,reps:5},{weight:100,reps:5},{weight:100,reps:5},{weight:100,reps:5}], date: '2026-03-10T10:00:00.000Z', dayType: 'legs' },
+  { id: 'demo-sq-6', exerciseId: ds('squat'), sets: [{weight:102.5,reps:5},{weight:102.5,reps:5},{weight:102.5,reps:4}], date: '2026-03-17T10:00:00.000Z', dayType: 'lower' },
+  { id: 'demo-sq-7', exerciseId: ds('squat'), sets: [{weight:100,reps:6},{weight:100,reps:6},{weight:100,reps:6},{weight:100,reps:5}], date: '2026-03-24T10:00:00.000Z', dayType: 'legs' },
+  // Overhead Press
+  { id: 'demo-ohp-1', exerciseId: ds('overhead-press'), sets: [{weight:50,reps:8},{weight:50,reps:8},{weight:50,reps:7}], date: '2026-02-11T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-ohp-2', exerciseId: ds('overhead-press'), sets: [{weight:52.5,reps:7},{weight:52.5,reps:7},{weight:52.5,reps:6}], date: '2026-02-18T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-ohp-3', exerciseId: ds('overhead-press'), sets: [{weight:52.5,reps:8},{weight:52.5,reps:8},{weight:52.5,reps:7}], date: '2026-02-25T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-ohp-4', exerciseId: ds('overhead-press'), sets: [{weight:55,reps:7},{weight:55,reps:7},{weight:55,reps:6}], date: '2026-03-04T10:00:00.000Z', dayType: 'upper' },
+  { id: 'demo-ohp-5', exerciseId: ds('overhead-press'), sets: [{weight:55,reps:8},{weight:55,reps:8},{weight:55,reps:7}], date: '2026-03-11T10:00:00.000Z', dayType: 'push' },
+  { id: 'demo-ohp-6', exerciseId: ds('overhead-press'), sets: [{weight:57.5,reps:7},{weight:57.5,reps:6},{weight:57.5,reps:6}], date: '2026-03-18T10:00:00.000Z', dayType: 'push' },
+  // Barbell Row
+  { id: 'demo-row-1', exerciseId: ds('barbell-row'), sets: [{weight:65,reps:6},{weight:65,reps:6},{weight:65,reps:6},{weight:65,reps:5}], date: '2026-02-12T10:00:00.000Z', dayType: 'pull' },
+  { id: 'demo-row-2', exerciseId: ds('barbell-row'), sets: [{weight:67.5,reps:6},{weight:67.5,reps:6},{weight:67.5,reps:6},{weight:67.5,reps:6}], date: '2026-02-19T10:00:00.000Z', dayType: 'pull' },
+  { id: 'demo-row-3', exerciseId: ds('barbell-row'), sets: [{weight:70,reps:5},{weight:70,reps:5},{weight:70,reps:5},{weight:70,reps:5}], date: '2026-02-26T10:00:00.000Z', dayType: 'pull' },
+  { id: 'demo-row-4', exerciseId: ds('barbell-row'), sets: [{weight:70,reps:6},{weight:70,reps:6},{weight:70,reps:6},{weight:70,reps:5}], date: '2026-03-05T10:00:00.000Z', dayType: 'upper' },
+  { id: 'demo-row-5', exerciseId: ds('barbell-row'), sets: [{weight:72.5,reps:6},{weight:72.5,reps:6},{weight:72.5,reps:6},{weight:72.5,reps:5}], date: '2026-03-12T10:00:00.000Z', dayType: 'pull' },
+  { id: 'demo-row-6', exerciseId: ds('barbell-row'), sets: [{weight:75,reps:6},{weight:75,reps:6},{weight:75,reps:5}], date: '2026-03-19T10:00:00.000Z', dayType: 'pull' },
+];
+
+const DEMO_PERSONAL_RECORDS: PersonalRecord[] = [
+  { exerciseId: ds('bench-press'),    weight: 80,    reps: 7, date: '2026-03-23T10:00:00.000Z' },
+  { exerciseId: ds('squat'),          weight: 102.5, reps: 5, date: '2026-03-17T10:00:00.000Z' },
+  { exerciseId: ds('overhead-press'), weight: 57.5,  reps: 7, date: '2026-03-18T10:00:00.000Z' },
+  { exerciseId: ds('barbell-row'),    weight: 75,    reps: 6, date: '2026-03-19T10:00:00.000Z' },
+];
+
 const PUSH_DAY: Day = { type: 'push', label: 'Push', color: 'indigo', exerciseIds: ['bench-press', 'overhead-press', 'incline-bench', 'lateral-raise', 'tricep-pushdown'] };
 const PULL_DAY: Day = { type: 'pull', label: 'Pull', color: 'violet', exerciseIds: ['barbell-row', 'pull-up', 'lat-pulldown', 'face-pull', 'barbell-curl'] };
 const LEGS_DAY: Day = { type: 'legs', label: 'Legs', color: 'purple', exerciseIds: ['squat', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
@@ -189,6 +232,24 @@ export const useWorkoutStore = create<WorkoutState>()(
           }));
         }
         return stored;
+      },
+      merge: (persisted: any, current: WorkoutState) => {
+        const sets: WorkoutSet[] = persisted?.workoutSets ?? [];
+        const prs: PersonalRecord[] = persisted?.personalRecords ?? [];
+        const demoPRKeys = new Set(DEMO_PERSONAL_RECORDS.map(p => p.exerciseId));
+        const demoSetIds = new Set(DEMO_WORKOUT_SETS.map(s => s.id));
+        return {
+          ...current,
+          ...persisted,
+          workoutSets: [
+            ...DEMO_WORKOUT_SETS,
+            ...sets.filter((s: WorkoutSet) => !demoSetIds.has(s.id)),
+          ],
+          personalRecords: [
+            ...DEMO_PERSONAL_RECORDS,
+            ...prs.filter((p: PersonalRecord) => !demoPRKeys.has(p.exerciseId)),
+          ],
+        };
       },
     }
   )
