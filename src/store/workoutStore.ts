@@ -92,7 +92,7 @@ export const useWorkoutStore = create<WorkoutState>()(
           exercises: state.exercises.filter(e => e.id !== id),
           splits: state.splits.map(split => ({
             ...split,
-            days: split.days.map(d => ({
+            days: (split.days ?? []).map(d => ({
               ...d,
               exerciseIds: d.exerciseIds.filter(eid => eid !== id),
             })),
@@ -145,7 +145,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             split.id === state.activeSplitId
               ? {
                   ...split,
-                  days: split.days.map(d =>
+                  days: (split.days ?? []).map(d =>
                     d.type === dayType ? { ...d, exerciseIds } : d
                   ),
                 }
@@ -176,6 +176,20 @@ export const useWorkoutStore = create<WorkoutState>()(
       setActiveSplit: (id) =>
         set({ activeSplitId: id }),
     }),
-    { name: 'ppl-workouts' }
+    {
+      name: 'ppl-workouts',
+      version: 1,
+      migrate: (stored: any) => {
+        // v0→v1: renamed split.sessions → split.days
+        if (stored?.splits) {
+          stored.splits = stored.splits.map((s: any) => ({
+            ...s,
+            days: s.days ?? s.sessions ?? [],
+            sessions: undefined,
+          }));
+        }
+        return stored;
+      },
+    }
   )
 );

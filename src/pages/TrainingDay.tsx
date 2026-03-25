@@ -23,7 +23,7 @@ export default function TrainingDay() {
   const [showEdit, setShowEdit] = useState(false);
 
   const activeSplit = splits.find(s => s.id === activeSplitId);
-  const trainingDay = activeSplit?.days.find(d => d.type === dayType);
+  const trainingDay = activeSplit?.days?.find(d => d.type === dayType);
   const dayExercises = exercises.filter(e => trainingDay?.exerciseIds.includes(e.id));
   const logExercise = logExerciseId ? exercises.find(e => e.id === logExerciseId) : null;
 
