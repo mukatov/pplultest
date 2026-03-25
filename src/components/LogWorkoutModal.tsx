@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
@@ -22,75 +22,78 @@ const METRIC_LABELS: Record<ChartMetric, string> = {
   maxReps:     'Max Reps',
   est1rm:      'Est. 1RM',
 };
-
 const METRIC_UNIT: Record<ChartMetric, string> = {
   maxWeight:   'KG',
   totalVolume: 'KG',
   maxReps:     'reps',
   est1rm:      'KG',
 };
-
 const TIME_RANGES: { label: string; value: TimeRange; days: number }[] = [
-  { label: '1W',      value: '1w',  days: 7   },
-  { label: '1M',      value: '1m',  days: 30  },
-  { label: '3M',      value: '3m',  days: 90  },
-  { label: '6M',      value: '6m',  days: 180 },
-  { label: '1Y',      value: '1y',  days: 365 },
-  { label: 'ALL TIME',value: 'all', days: Infinity },
+  { label: '1W',       value: '1w',  days: 7   },
+  { label: '1M',       value: '1m',  days: 30  },
+  { label: '3M',       value: '3m',  days: 90  },
+  { label: '6M',       value: '6m',  days: 180 },
+  { label: '1Y',       value: '1y',  days: 365 },
+  { label: 'ALL TIME', value: 'all', days: Infinity },
 ];
+
+const BATCH = 6; // sessions per lazy-load batch
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function relativeDate(dateStr: string): string {
-  const diffDays = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (diffDays === 0) return 'today';
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7)  return `${diffDays}d ago`;
-  if (diffDays < 14) return 'last week';
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return `${Math.floor(diffDays / 30)}mo ago`;
+  const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+  if (d === 0) return 'today';
+  if (d === 1) return 'yesterday';
+  if (d < 7)  return `${d}d ago`;
+  if (d < 14) return 'last week';
+  if (d < 30) return `${Math.floor(d / 7)}w ago`;
+  return `${Math.floor(d / 30)}mo ago`;
 }
 
 function computeMetric(ws: WorkoutSet, metric: ChartMetric): number {
   const sets = ws.sets;
   switch (metric) {
-    case 'maxWeight':
-      return Math.max(...sets.map(s => s.weight));
-    case 'totalVolume':
-      return sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+    case 'maxWeight':   return Math.max(...sets.map(s => s.weight));
+    case 'totalVolume': return Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0));
     case 'maxReps': {
-      const maxW = Math.max(...sets.map(s => s.weight));
-      return Math.max(...sets.filter(s => s.weight === maxW).map(s => s.reps));
+      const mw = Math.max(...sets.map(s => s.weight));
+      return Math.max(...sets.filter(s => s.weight === mw).map(s => s.reps));
     }
-    case 'est1rm':
-      return Math.round(Math.max(...sets.map(s => s.weight * (1 + s.reps / 30))));
+    case 'est1rm': return Math.round(Math.max(...sets.map(s => s.weight * (1 + s.reps / 30))));
   }
 }
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
 
-function LineChart({ data }: { data: { value: number; isLatest: boolean }[] }) {
+const CHART_W = 346, CHART_H = 165, PAD_X = 10, PAD_Y = 14, DOT = 12, HIT = 28;
+
+function LineChart({
+  data,
+  selectedIndex,
+  onSelect,
+}: {
+  data: { value: number }[];
+  selectedIndex: number;
+  onSelect: (i: number) => void;
+}) {
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-xs text-[#525252]">No data in range</p>
+        <p className="text-xs text-[#525252]">No data in selected range</p>
       </div>
     );
   }
 
-  const W = 346, H = 165;
-  const padX = 6, padY = 12;
-  const ew = W - padX * 2;
-  const eh = H - padY * 2;
-
+  const ew = CHART_W - PAD_X * 2;
+  const eh = CHART_H - PAD_Y * 2;
   const minV = Math.min(...data.map(d => d.value));
   const maxV = Math.max(...data.map(d => d.value));
   const range = maxV - minV || 1;
 
   const pts = data.map((d, i) => ({
-    x: padX + (data.length === 1 ? ew / 2 : (i / (data.length - 1)) * ew),
-    y: padY + eh - ((d.value - minV) / range) * eh,
-    isLatest: d.isLatest,
+    x: PAD_X + (data.length === 1 ? ew / 2 : (i / (data.length - 1)) * ew),
+    y: PAD_Y + eh - ((d.value - minV) / range) * eh,
   }));
 
   const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
@@ -99,9 +102,8 @@ function LineChart({ data }: { data: { value: number; isLatest: boolean }[] }) {
     <svg
       width="100%"
       height="100%"
-      viewBox={`0 0 ${W} ${H}`}
+      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
       preserveAspectRatio="none"
-      style={{ overflow: 'visible' }}
     >
       {data.length > 1 && (
         <polyline
@@ -112,32 +114,32 @@ function LineChart({ data }: { data: { value: number; isLatest: boolean }[] }) {
           strokeLinejoin="round"
         />
       )}
-      {pts.map((p, i) => (
-        <rect
-          key={i}
-          x={p.x - 6}
-          y={p.y - 6}
-          width={12}
-          height={12}
-          fill={p.isLatest ? '#ffffff' : '#fd9a00'}
-        />
-      ))}
+      {pts.map((p, i) => {
+        const isSelected = i === selectedIndex;
+        return (
+          <g key={i} onClick={() => onSelect(i)} style={{ cursor: 'pointer' }}>
+            {/* invisible larger hit area */}
+            <rect x={p.x - HIT/2} y={p.y - HIT/2} width={HIT} height={HIT} fill="transparent" />
+            {/* visible dot */}
+            <rect
+              x={p.x - DOT/2}
+              y={p.y - DOT/2}
+              width={DOT}
+              height={DOT}
+              fill={isSelected ? '#ffffff' : '#fd9a00'}
+            />
+          </g>
+        );
+      })}
     </svg>
   );
 }
 
 // ─── Trend Dropdown ───────────────────────────────────────────────────────────
 
-function TrendDropdown({
-  value,
-  onChange,
-}: {
-  value: ChartMetric;
-  onChange: (m: ChartMetric) => void;
-}) {
+function TrendDropdown({ value, onChange }: { value: ChartMetric; onChange: (m: ChartMetric) => void }) {
   const [open, setOpen] = useState(false);
   const metrics: ChartMetric[] = ['maxWeight', 'totalVolume', 'maxReps', 'est1rm'];
-
   return (
     <div className="relative z-10">
       <button
@@ -146,10 +148,10 @@ function TrendDropdown({
       >
         <span className="text-[#a3a3a3]">Trend:</span>
         <span className="text-[#fafafa] font-medium">{METRIC_LABELS[value]}</span>
-        <ChevronDown size={14} className={`text-[#a3a3a3] transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={13} className={`text-[#a3a3a3] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-full mt-1 left-0 bg-[#1f1f1f] border border-[#404040] rounded-xl overflow-hidden shadow-lg min-w-[160px]">
+        <div className="absolute top-full mt-1 left-0 bg-[#1a1a1a] border border-[#404040] rounded-xl overflow-hidden shadow-xl min-w-[160px]">
           {metrics.map(m => (
             <button
               key={m}
@@ -169,14 +171,8 @@ function TrendDropdown({
 
 // ─── Set Grid ─────────────────────────────────────────────────────────────────
 
-function SetGrid({
-  sets,
-  highlightMax,
-  onRemove,
-}: {
-  sets: SetEntry[];
-  highlightMax: boolean;
-  onRemove?: (index: number) => void;
+function SetGrid({ sets, highlightMax, onRemove }: {
+  sets: SetEntry[]; highlightMax: boolean; onRemove?: (i: number) => void;
 }) {
   if (sets.length === 0) return null;
   const maxW = highlightMax ? Math.max(...sets.map(s => s.weight)) : -1;
@@ -185,15 +181,9 @@ function SetGrid({
       {sets.map((s, i) => {
         const isPR = s.weight === maxW;
         return (
-          <div
-            key={i}
-            className={`bg-[#262626] rounded-xl py-3 px-4 flex flex-col items-center gap-1 relative ${isPR ? 'border border-[#fcd34d]' : ''}`}
-          >
+          <div key={i} className={`bg-[#262626] rounded-xl py-3 px-4 flex flex-col items-center gap-1 relative ${isPR ? 'border border-[#fcd34d]' : ''}`}>
             {onRemove && (
-              <button
-                onClick={() => onRemove(i)}
-                className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-[#404040] text-[#a3a3a3] active:bg-[#525252]"
-              >
+              <button onClick={() => onRemove(i)} className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-[#404040] text-[#a3a3a3] active:bg-[#525252]">
                 <X size={10} />
               </button>
             )}
@@ -213,44 +203,36 @@ function SetGrid({
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
 
-function Stepper({
-  value, onChange, step, min, label, unit,
-}: {
-  value: number; onChange: (v: number) => void;
-  step: number; min: number; label: string; unit?: string;
+function Stepper({ value, onChange, step, min, label, unit }: {
+  value: number; onChange: (v: number) => void; step: number; min: number; label: string; unit?: string;
 }) {
   const haptic = () => navigator.vibrate?.(8);
   const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); haptic(); };
   const inc = () => { onChange(parseFloat((value + step).toFixed(2))); haptic(); };
 
-  const dragRef = useRef<{ lastY: number } | null>(null);
+  const dragRef  = useRef<{ lastY: number } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onDown   = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     dragRef.current = { lastY: e.clientY };
     trackRef.current?.setPointerCapture(e.pointerId);
-    setIsDragging(true);
+    setDragging(true);
   };
-  const handlePointerMove = (e: React.PointerEvent) => {
+  const onMove   = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
     const dy = dragRef.current.lastY - e.clientY;
     if (Math.abs(dy) >= 8) { if (dy > 0) inc(); else dec(); dragRef.current.lastY = e.clientY; }
   };
-  const handlePointerUp = () => { dragRef.current = null; setIsDragging(false); };
+  const onUp = () => { dragRef.current = null; setDragging(false); };
 
   return (
-    <div className={`bg-[#262626] rounded-3xl flex-1 flex flex-col items-center gap-2 py-5 px-6 transition-colors ${isDragging ? 'bg-[#1f1f1f]' : ''}`}>
+    <div className={`bg-[#262626] rounded-3xl flex-1 flex flex-col items-center gap-2 py-5 px-6 transition-colors ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
       <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{label}</p>
-      <div
-        ref={trackRef}
-        onPointerDown={handlePointerDown} onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}
-        style={{ touchAction: 'none' }}
-        className="flex items-center justify-between w-full cursor-ns-resize select-none"
-      >
+      <div ref={trackRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+        style={{ touchAction: 'none' }} className="flex items-center justify-between w-full cursor-ns-resize select-none">
         <button onClick={dec} className={`w-6 h-6 flex items-center justify-center rounded-[4px] transition-opacity ${value <= min ? 'opacity-30' : ''}`}>
           <Minus size={16} className="text-[#fafafa]" />
         </button>
@@ -264,58 +246,79 @@ function Stepper({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onClose }: Props) {
   const { logWorkout, getLastWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
-  const lastWorkout = currentUser ? getLastWorkout(exerciseId, currentUser.id) : undefined;
-  const history     = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
+  const lastWorkout   = currentUser ? getLastWorkout(exerciseId, currentUser.id) : undefined;
+  const history       = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
+  const historyDesc   = [...history].reverse(); // newest first
 
-  const lastMaxWeight = lastWorkout ? Math.max(...lastWorkout.sets.map(s => s.weight)) : null;
-  const lastMaxReps   = lastWorkout
-    ? (lastWorkout.sets.find(s => s.weight === lastMaxWeight)?.reps ?? null)
-    : null;
+  const lastMaxW = lastWorkout ? Math.max(...lastWorkout.sets.map(s => s.weight)) : null;
+  const lastMaxR = lastWorkout ? (lastWorkout.sets.find(s => s.weight === lastMaxW)?.reps ?? null) : null;
 
-  const [mode, setMode]               = useState<'session' | 'history'>('session');
-  const [completedSets, setCompletedSets] = useState<SetEntry[]>([]);
-  const [weight, setWeight]           = useState(lastWorkout?.sets?.[0]?.weight ?? 20);
-  const [reps, setReps]               = useState(lastWorkout?.sets?.[0]?.reps ?? 12);
-  const [saved, setSaved]             = useState(false);
+  // Session state
+  const [mode, setMode]           = useState<'session' | 'history'>('session');
+  const [completedSets, setComp]  = useState<SetEntry[]>([]);
+  const [weight, setWeight]       = useState(lastWorkout?.sets?.[0]?.weight ?? 20);
+  const [reps,   setReps]         = useState(lastWorkout?.sets?.[0]?.reps   ?? 12);
+  const [saved,  setSaved]        = useState(false);
 
   // Chart state
-  const [chartMetric, setChartMetric] = useState<ChartMetric>('maxWeight');
-  const [timeRange, setTimeRange]     = useState<TimeRange>('3m');
+  const [chartMetric,    setChartMetric]    = useState<ChartMetric>('maxWeight');
+  const [timeRange,      setTimeRange]      = useState<TimeRange>('3m');
+  const [selectedPtIdx,  setSelectedPtIdx]  = useState<number | null>(null);
 
-  const currentSetNumber = completedSets.length + 1;
+  // Lazy-load state
+  const [visibleCount, setVisibleCount] = useState(BATCH);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  // Filter history by time range
-  const now = Date.now();
-  const rangeMs = TIME_RANGES.find(r => r.value === timeRange)!.days * 86400000;
-  const filteredHistory = history.filter(ws =>
-    now - new Date(ws.date).getTime() <= rangeMs
-  );
+  // Reset lazy-load when entering history mode
+  useEffect(() => {
+    if (mode === 'history') setVisibleCount(BATCH);
+  }, [mode]);
 
-  // Chart data points
-  const chartData = filteredHistory.map((ws, i) => ({
-    value: computeMetric(ws, chartMetric),
-    isLatest: i === filteredHistory.length - 1,
-  }));
+  // Intersection observer for lazy loading
+  useEffect(() => {
+    if (mode !== 'history') return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) setVisibleCount(prev => prev + BATCH); },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [mode, sentinelRef.current]);
 
-  const latestValue = chartData.length > 0 ? chartData[chartData.length - 1].value : null;
+  // Filtered history for chart
+  const now    = Date.now();
+  const rangMs = TIME_RANGES.find(r => r.value === timeRange)!.days * 86400000;
+  const chartHistory = history.filter(ws => now - new Date(ws.date).getTime() <= rangMs);
+  const chartData    = chartHistory.map(ws => ({ value: computeMetric(ws, chartMetric) }));
 
+  // Reset selected point when metric/range changes; default to latest
+  useEffect(() => {
+    setSelectedPtIdx(chartData.length > 0 ? chartData.length - 1 : null);
+  }, [chartMetric, timeRange, chartData.length]);
+
+  const effectiveIdx   = selectedPtIdx ?? (chartData.length > 0 ? chartData.length - 1 : null);
+  const displayValue   = effectiveIdx !== null ? chartData[effectiveIdx]?.value ?? null : null;
+  const displaySession = effectiveIdx !== null ? chartHistory[effectiveIdx] : null;
+  const displayDate    = displaySession
+    ? new Date(displaySession.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
+    : null;
+
+  // Session handlers
   const handleAddSet = () => {
-    const nextIndex = completedSets.length + 1;
-    setCompletedSets(prev => [...prev, { weight, reps }]);
-    const nextLastSet = lastWorkout?.sets?.[nextIndex];
-    if (nextLastSet) { setWeight(nextLastSet.weight); setReps(nextLastSet.reps); }
+    const nextIdx = completedSets.length + 1;
+    setComp(prev => [...prev, { weight, reps }]);
+    const nextSet = lastWorkout?.sets?.[nextIdx];
+    if (nextSet) { setWeight(nextSet.weight); setReps(nextSet.reps); }
   };
-
-  const handleRemoveSet = (index: number) => {
-    setCompletedSets(prev => prev.filter((_, i) => i !== index));
-  };
-
+  const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));
   const handleSave = () => {
     if (!currentUser || completedSets.length === 0) return;
     logWorkout(exerciseId, completedSets, dayType, currentUser.id);
@@ -344,22 +347,18 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
               <span className="text-xl font-semibold text-[#0a0a0a] uppercase truncate px-2">{exerciseName}</span>
               <span className="text-xs text-[#0a0a0a]">current session</span>
             </div>
-            {lastWorkout && lastMaxWeight !== null && (
-              <button
-                onClick={() => setMode('history')}
-                className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform"
-              >
-                <span className="text-xl font-semibold text-[#fafafa]">{lastMaxWeight}×{lastMaxReps}</span>
+            {lastWorkout && lastMaxW !== null && (
+              <button onClick={() => setMode('history')}
+                className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform">
+                <span className="text-xl font-semibold text-[#fafafa]">{lastMaxW}×{lastMaxR}</span>
                 <span className="text-xs text-[#737373]">{relativeDate(lastWorkout.date)}</span>
               </button>
             )}
           </>
         ) : (
           <>
-            <button
-              onClick={() => setMode('session')}
-              className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform"
-            >
+            <button onClick={() => setMode('session')}
+              className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform">
               <span className="text-xl font-semibold text-[#fafafa]">BACK</span>
               <span className="text-xs text-[#737373]">to session</span>
             </button>
@@ -376,9 +375,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
         {mode === 'session' ? (
           <>
             <SetGrid sets={completedSets} highlightMax onRemove={handleRemoveSet} />
-            <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
-              SET {currentSetNumber}
-            </p>
+            <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">SET {completedSets.length + 1}</p>
             <div className="flex gap-2.5">
               <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" />
               <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS" />
@@ -388,45 +385,47 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
           <div className="flex flex-col gap-3">
             {/* Chart card */}
             <div className="bg-[#262626] border border-[#404040] rounded-xl p-3 flex flex-col gap-3">
-              {/* Header row: dropdown + current value */}
-              <div className="flex items-center justify-between">
+              {/* Dropdown row + selected value */}
+              <div className="flex items-start justify-between">
                 <TrendDropdown value={chartMetric} onChange={setChartMetric} />
-                {latestValue !== null && (
-                  <div className="flex items-end gap-1">
-                    <span className="text-[30px] font-semibold text-[#fafafa] leading-none tracking-[-1px]">
-                      {latestValue}
-                    </span>
-                    <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">
-                      {METRIC_UNIT[chartMetric]}
-                    </span>
-                  </div>
-                )}
+                <div className="text-right">
+                  {displayValue !== null ? (
+                    <>
+                      <div className="flex items-end gap-1 justify-end">
+                        <span className="text-[30px] font-semibold text-[#fafafa] leading-none tracking-[-1px]">{displayValue}</span>
+                        <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">{METRIC_UNIT[chartMetric]}</span>
+                      </div>
+                      {displayDate && (
+                        <p className="text-[10px] text-[#525252] mt-0.5">{displayDate}</p>
+                      )}
+                    </>
+                  ) : null}
+                </div>
               </div>
               {/* Chart */}
               <div className="h-[165px]">
-                <LineChart data={chartData} />
+                <LineChart
+                  data={chartData}
+                  selectedIndex={effectiveIdx ?? -1}
+                  onSelect={i => setSelectedPtIdx(i)}
+                />
               </div>
             </div>
 
-            {/* Time range segmented control */}
+            {/* Time range bar */}
             <div className="flex rounded-lg overflow-hidden border border-[#404040]">
               {TIME_RANGES.map((r, i) => (
-                <button
-                  key={r.value}
-                  onClick={() => setTimeRange(r.value)}
+                <button key={r.value} onClick={() => { setTimeRange(r.value); setSelectedPtIdx(null); }}
                   className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    timeRange === r.value
-                      ? 'bg-[rgba(255,255,255,0.15)] text-[#fafafa]'
-                      : 'text-[#737373]'
-                  } ${i > 0 ? 'border-l border-[#404040]' : ''}`}
-                >
+                    timeRange === r.value ? 'bg-[rgba(255,255,255,0.15)] text-[#fafafa]' : 'text-[#737373]'
+                  } ${i > 0 ? 'border-l border-[#404040]' : ''}`}>
                   {r.label}
                 </button>
               ))}
             </div>
 
-            {/* Session history list */}
-            {[...history].reverse().map(ws => {
+            {/* Session history list (lazy loaded) */}
+            {historyDesc.slice(0, visibleCount).map(ws => {
               const dateStr = new Date(ws.date).toLocaleDateString('en-GB', {
                 weekday: 'long', day: 'numeric', month: 'long',
               }).toUpperCase();
@@ -437,6 +436,13 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
                 </div>
               );
             })}
+
+            {/* Sentinel for intersection observer / lazy loading */}
+            {visibleCount < historyDesc.length && (
+              <div ref={sentinelRef} className="py-4 flex justify-center">
+                <div className="w-5 h-5 rounded-full border-2 border-[#404040] border-t-[#737373] animate-spin" />
+              </div>
+            )}
 
             {history.length === 0 && (
               <p className="text-center text-[#737373] text-sm mt-4">No history yet</p>
