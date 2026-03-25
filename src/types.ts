@@ -26,6 +26,12 @@ export interface WorkoutSet {
   sets: SetEntry[];
   date: string;
   dayType: DayType;
+  supersetId?: string;
+}
+
+export interface Superset {
+  id: string;
+  exerciseIds: string[];
 }
 
 export interface Day {
@@ -33,6 +39,7 @@ export interface Day {
   label: string;
   color: string;
   exerciseIds: string[];
+  supersets?: Superset[];
 }
 
 export type TrainingDay = Day;

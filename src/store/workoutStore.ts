@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Exercise, WorkoutSet, Day, Split, PersonalRecord, DayType, SetEntry } from '../types';
+import { Exercise, WorkoutSet, Day, Split, Superset, PersonalRecord, DayType, SetEntry } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
 
 const DEMO_UID = 'demo-user-001';
@@ -206,11 +206,13 @@ interface WorkoutState {
   updateExercise: (exercise: Exercise) => void;
   deleteExercise: (id: string) => void;
 
-  logWorkout: (exerciseId: string, sets: SetEntry[], dayType: DayType, userId: string) => void;
+  logWorkout: (exerciseId: string, sets: SetEntry[], dayType: DayType, userId: string, supersetId?: string) => void;
   getLastWorkout: (exerciseId: string, userId: string) => WorkoutSet | undefined;
   getWorkoutHistory: (exerciseId: string, userId: string) => WorkoutSet[];
 
   updateDayExercises: (dayType: string, exerciseIds: string[]) => void;
+  addSuperset: (dayType: string, superset: Superset) => void;
+  removeSuperset: (dayType: string, supersetId: string) => void;
 
   getPersonalRecord: (exerciseId: string, userId: string) => PersonalRecord | undefined;
 
@@ -248,17 +250,21 @@ export const useWorkoutStore = create<WorkoutState>()(
             days: (split.days ?? []).map(d => ({
               ...d,
               exerciseIds: d.exerciseIds.filter(eid => eid !== id),
+              supersets: (d.supersets ?? [])
+                .map(ss => ({ ...ss, exerciseIds: ss.exerciseIds.filter(eid => eid !== id) }))
+                .filter(ss => ss.exerciseIds.length >= 2),
             })),
           })),
         })),
 
-      logWorkout: (exerciseId, sets, dayType, userId) => {
+      logWorkout: (exerciseId, sets, dayType, userId, supersetId?) => {
         const entry: WorkoutSet = {
           id: generateId(),
           exerciseId: `${userId}:${exerciseId}`,
           sets,
           date: new Date().toISOString(),
           dayType,
+          ...(supersetId ? { supersetId } : {}),
         };
         set(state => {
           const updated = [...state.workoutSets, entry];
@@ -300,6 +306,38 @@ export const useWorkoutStore = create<WorkoutState>()(
                   ...split,
                   days: (split.days ?? []).map(d =>
                     d.type === dayType ? { ...d, exerciseIds } : d
+                  ),
+                }
+              : split
+          ),
+        })),
+
+      addSuperset: (dayType, superset) =>
+        set(state => ({
+          splits: state.splits.map(split =>
+            split.id === state.activeSplitId
+              ? {
+                  ...split,
+                  days: (split.days ?? []).map(d =>
+                    d.type === dayType
+                      ? { ...d, supersets: [...(d.supersets ?? []), superset] }
+                      : d
+                  ),
+                }
+              : split
+          ),
+        })),
+
+      removeSuperset: (dayType, supersetId) =>
+        set(state => ({
+          splits: state.splits.map(split =>
+            split.id === state.activeSplitId
+              ? {
+                  ...split,
+                  days: (split.days ?? []).map(d =>
+                    d.type === dayType
+                      ? { ...d, supersets: (d.supersets ?? []).filter(ss => ss.id !== supersetId) }
+                      : d
                   ),
                 }
               : split

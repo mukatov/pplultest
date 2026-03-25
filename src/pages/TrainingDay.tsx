@@ -1,12 +1,49 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trophy, ChevronLeft, Clock } from 'lucide-react';
+import { Plus, Pencil, Trophy, ChevronLeft, Clock, Link2, X } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { Exercise } from '../types';
+import { Exercise, Superset } from '../types';
 import LogWorkoutModal from '../components/LogWorkoutModal';
 import AddExerciseModal from '../components/AddExerciseModal';
 import EditDayModal from '../components/EditDayModal';
+import SupersetModal from '../components/SupersetModal';
+
+type DisplayItem =
+  | { kind: 'standalone'; exercise: Exercise }
+  | { kind: 'superset'; superset: Superset; exercises: Exercise[] };
+
+function buildDisplayItems(
+  orderedIds: string[],
+  supersets: Superset[],
+  exercises: Exercise[]
+): DisplayItem[] {
+  const idToSuperset = new Map<string, Superset>();
+  for (const ss of supersets) {
+    for (const eid of ss.exerciseIds) idToSuperset.set(eid, ss);
+  }
+
+  const emitted = new Set<string>();
+  const items: DisplayItem[] = [];
+
+  for (const eid of orderedIds) {
+    const ss = idToSuperset.get(eid);
+    if (ss) {
+      if (!emitted.has(ss.id)) {
+        emitted.add(ss.id);
+        const ssExercises = ss.exerciseIds
+          .map(id => exercises.find(e => e.id === id))
+          .filter((e): e is Exercise => !!e);
+        items.push({ kind: 'superset', superset: ss, exercises: ssExercises });
+      }
+    } else {
+      const ex = exercises.find(e => e.id === eid);
+      if (ex) items.push({ kind: 'standalone', exercise: ex });
+    }
+  }
+
+  return items;
+}
 
 export default function TrainingDay() {
   const { day } = useParams<{ day: string }>();
@@ -15,17 +52,24 @@ export default function TrainingDay() {
 
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
-  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises } = useWorkoutStore();
+  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
-  const [logExerciseId, setLogExerciseId] = useState<string | null>(null);
+  const [logState, setLogState] = useState<{ exerciseId: string; supersetId?: string } | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showSuperset, setShowSuperset] = useState(false);
 
   const activeSplit = splits.find(s => s.id === activeSplitId);
   const trainingDay = activeSplit?.days?.find(d => d.type === dayType);
   const dayExercises = exercises.filter(e => trainingDay?.exerciseIds.includes(e.id));
-  const logExercise = logExerciseId ? exercises.find(e => e.id === logExerciseId) : null;
+  const logExercise = logState ? exercises.find(e => e.id === logState.exerciseId) : null;
+
+  const displayItems = buildDisplayItems(
+    trainingDay?.exerciseIds ?? [],
+    trainingDay?.supersets ?? [],
+    exercises
+  );
 
   function handleAddExercise(exercise: Exercise) {
     const currentIds = trainingDay?.exerciseIds ?? [];
@@ -39,6 +83,47 @@ export default function TrainingDay() {
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
     return `${days}d ago`;
+  }
+
+  function ExerciseCard({ exercise, supersetId }: { exercise: Exercise; supersetId?: string }) {
+    const last = currentUser ? getLastWorkout(exercise.id, currentUser.id) : undefined;
+    const pr = currentUser ? getPersonalRecord(exercise.id, currentUser.id) : undefined;
+    const maxWeight = last ? Math.max(...last.sets.map(s => s.weight)) : 0;
+    const totalSets = last?.sets.length ?? 0;
+
+    return (
+      <button
+        onClick={() => setLogState({ exerciseId: exercise.id, supersetId })}
+        className="w-full bg-[#262626] hover:bg-[#2e2e2e] rounded-2xl px-4 py-5 text-center transition-all active:scale-[0.98]"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="w-6" />
+          <h3 className="font-semibold text-[#fafafa] uppercase tracking-wide text-sm">
+            {exercise.name}
+          </h3>
+          {pr ? (
+            <span className="flex items-center gap-1 text-xs text-yellow-400">
+              <Trophy size={11} />
+              {pr.weight}kg
+            </span>
+          ) : <div className="w-6" />}
+        </div>
+        <p className="text-xs text-[#737373]">{exercise.muscleGroups.join(' · ')}</p>
+        {last ? (
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <span className="text-xs text-[#525252] flex items-center gap-1">
+              <Clock size={11} />
+              {formatDate(last.date)}
+            </span>
+            <span className="text-xs text-[#525252]">
+              {totalSets} sets · {maxWeight}kg
+            </span>
+          </div>
+        ) : (
+          <p className="text-xs text-[#525252] mt-2">Tap to log sets</p>
+        )}
+      </button>
+    );
   }
 
   return (
@@ -76,7 +161,7 @@ export default function TrainingDay() {
 
       {/* Exercise list */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-        {dayExercises.length === 0 ? (
+        {displayItems.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-[#737373] font-medium">No exercises yet.</p>
             <p className="text-[#525252] text-sm mt-1">Add exercises to get started.</p>
@@ -88,51 +173,55 @@ export default function TrainingDay() {
             </button>
           </div>
         ) : (
-          dayExercises.map(exercise => {
-            const last = currentUser ? getLastWorkout(exercise.id, currentUser.id) : undefined;
-            const pr = currentUser ? getPersonalRecord(exercise.id, currentUser.id) : undefined;
-            const maxWeight = last ? Math.max(...last.sets.map(s => s.weight)) : 0;
-            const totalSets = last?.sets.length ?? 0;
+          displayItems.map(item => {
+            if (item.kind === 'standalone') {
+              return <ExerciseCard key={item.exercise.id} exercise={item.exercise} />;
+            }
 
+            // Superset card
             return (
-              <button
-                key={exercise.id}
-                onClick={() => setLogExerciseId(exercise.id)}
-                className="w-full bg-[#262626] hover:bg-[#2e2e2e] rounded-2xl px-4 py-5 text-center transition-all active:scale-[0.98]"
+              <div
+                key={item.superset.id}
+                className="bg-[#1c1c1c] rounded-2xl overflow-hidden border border-[#333]"
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="w-6" />
-                  <h3 className="font-semibold text-[#fafafa] uppercase tracking-wide text-sm">
-                    {exercise.name}
-                  </h3>
-                  {pr ? (
-                    <span className="flex items-center gap-1 text-xs text-yellow-400">
-                      <Trophy size={11} />
-                      {pr.weight}kg
-                    </span>
-                  ) : <div className="w-6" />}
-                </div>
-                <p className="text-xs text-[#737373]">{exercise.muscleGroups.join(' · ')}</p>
-                {last ? (
-                  <div className="flex items-center justify-center gap-3 mt-2">
-                    <span className="text-xs text-[#525252] flex items-center gap-1">
-                      <Clock size={11} />
-                      {formatDate(last.date)}
-                    </span>
-                    <span className="text-xs text-[#525252]">
-                      {totalSets} sets · {maxWeight}kg
-                    </span>
+                {/* Superset header */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#333]">
+                  <div className="flex items-center gap-1.5">
+                    <Link2 size={12} className="text-[#fd9a00]" />
+                    <span className="text-[10px] font-bold text-[#fd9a00] uppercase tracking-[2px]">Superset</span>
                   </div>
-                ) : (
-                  <p className="text-xs text-[#525252] mt-2">Tap to log sets</p>
-                )}
-              </button>
+                  <button
+                    onClick={() => removeSuperset(dayType, item.superset.id)}
+                    className="w-6 h-6 flex items-center justify-center rounded-full bg-[#262626] active:bg-[#404040]"
+                  >
+                    <X size={10} className="text-[#737373]" />
+                  </button>
+                </div>
+
+                {/* Exercises inside superset */}
+                <div className="p-2 space-y-1">
+                  {item.exercises.map((exercise, idx) => (
+                    <div key={exercise.id}>
+                      <ExerciseCard exercise={exercise} supersetId={item.superset.id} />
+                      {idx < item.exercises.length - 1 && (
+                        <div className="flex items-center justify-center py-1">
+                          <div className="flex flex-col items-center gap-0.5">
+                            <div className="w-px h-2 bg-[#404040]" />
+                            <Link2 size={10} className="text-[#525252]" />
+                            <div className="w-px h-2 bg-[#404040]" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             );
           })
         )}
       </div>
 
-      {/* Bottom action */}
+      {/* Bottom actions */}
       <div className="px-4 py-6 flex gap-3">
         <button
           onClick={() => setShowAdd(true)}
@@ -141,6 +230,15 @@ export default function TrainingDay() {
           <Plus size={16} />
           Add exercise
         </button>
+        {dayExercises.length >= 2 && (
+          <button
+            onClick={() => setShowSuperset(true)}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-[#262626] text-[#fafafa] font-medium text-sm active:scale-[0.98] border border-[#404040]"
+          >
+            <Link2 size={16} />
+            Superset
+          </button>
+        )}
       </div>
 
       {/* Modals */}
@@ -149,7 +247,8 @@ export default function TrainingDay() {
           exerciseId={logExercise.id}
           exerciseName={logExercise.name}
           dayType={dayType}
-          onClose={() => setLogExerciseId(null)}
+          supersetId={logState?.supersetId}
+          onClose={() => setLogState(null)}
         />
       )}
       {showAdd && (
@@ -163,6 +262,12 @@ export default function TrainingDay() {
         <EditDayModal
           dayType={dayType}
           onClose={() => setShowEdit(false)}
+        />
+      )}
+      {showSuperset && (
+        <SupersetModal
+          dayType={dayType}
+          onClose={() => setShowSuperset(false)}
         />
       )}
     </div>
