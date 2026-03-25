@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown, Link2 } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry, WorkoutSet } from '../types';
@@ -8,6 +8,7 @@ interface Props {
   exerciseId: string;
   exerciseName: string;
   dayType: DayType;
+  supersetId?: string;
   onClose: () => void;
 }
 
@@ -248,7 +249,7 @@ function Stepper({ value, onChange, step, min, label, unit }: {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onClose }: Props) {
+export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, supersetId, onClose }: Props) {
   const { logWorkout, getLastWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
@@ -321,7 +322,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
   const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));
   const handleSave = () => {
     if (!currentUser || completedSets.length === 0) return;
-    logWorkout(exerciseId, completedSets, dayType, currentUser.id);
+    logWorkout(exerciseId, completedSets, dayType, currentUser.id, supersetId);
     setSaved(true);
     setTimeout(onClose, 700);
   };
@@ -431,7 +432,10 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
               }).toUpperCase();
               return (
                 <div key={ws.id} className="flex flex-col gap-2.5">
-                  <p className="text-center text-sm text-[#fafafa] uppercase tracking-[1.5px]">{dateStr}</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-center text-sm text-[#fafafa] uppercase tracking-[1.5px]">{dateStr}</p>
+                    {ws.supersetId && <Link2 size={11} className="text-[#fd9a00] flex-shrink-0" />}
+                  </div>
                   <SetGrid sets={ws.sets} highlightMax />
                 </div>
               );
