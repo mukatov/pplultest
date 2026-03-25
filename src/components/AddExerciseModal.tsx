@@ -4,12 +4,29 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { DayType, Exercise } from '../types';
 import { suggestDays, DEFAULT_EXERCISES } from '../data/exercises';
 
+function generateId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+}
+
 const ALL_DAYS: { type: DayType; label: string }[] = [
   { type: 'push', label: 'Push' },
   { type: 'pull', label: 'Pull' },
   { type: 'legs', label: 'Legs' },
   { type: 'upper', label: 'Upper' },
   { type: 'lower', label: 'Lower' },
+];
+
+const ALL_MUSCLE_GROUPS = [
+  'Chest', 'Upper Chest', 'Triceps', 'Front Deltoid', 'Side Deltoid',
+  'Shoulders', 'Back', 'Biceps', 'Brachialis', 'Rear Deltoid', 'Traps',
+  'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Core',
 ];
 
 interface Props {
@@ -21,10 +38,11 @@ interface Props {
 export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
   const { exercises, addExercise } = useWorkoutStore();
   const [name, setName] = useState('');
-  const [muscles, setMuscles] = useState('');
+  const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayType[]>([dayType]);
   const [suggested, setSuggested] = useState<DayType[]>([]);
   const [search, setSearch] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
   const [tab, setTab] = useState<'library' | 'new'>('library');
   const [showAll, setShowAll] = useState(false);
 
@@ -43,12 +61,18 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
     );
   };
 
+  const toggleMuscle = (m: string) => {
+    setSelectedMuscles(prev =>
+      prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
+    );
+  };
+
   const handleCreate = () => {
     if (!name.trim()) return;
     const exercise: Exercise = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: name.trim(),
-      muscleGroups: muscles.split(',').map(m => m.trim()).filter(Boolean),
+      muscleGroups: selectedMuscles,
       suggestedDays: selectedDays,
     };
     addExercise(exercise);
@@ -61,14 +85,19 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
     ...exercises.filter(e => !DEFAULT_EXERCISES.find(d => d.id === e.id)),
   ];
 
-  const forThisDay = allExercises.filter(e =>
-    e.suggestedDays.includes(dayType) &&
-    e.name.toLowerCase().includes(search.toLowerCase())
-  );
-  const others = allExercises.filter(e =>
-    !e.suggestedDays.includes(dayType) &&
-    e.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = allExercises.filter(e => {
+    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const matchMuscle = !muscleFilter || e.muscleGroups.some(m => m.toLowerCase().includes(muscleFilter.toLowerCase()));
+    return matchSearch && matchMuscle;
+  });
+
+  const forThisDay = filtered.filter(e => e.suggestedDays.includes(dayType));
+  const others = filtered.filter(e => !e.suggestedDays.includes(dayType));
+
+  // Collect muscle groups present in all exercises for the filter bar
+  const availableMuscles = Array.from(
+    new Set(allExercises.flatMap(e => e.muscleGroups))
+  ).sort();
 
   const dayLabel = dayType.charAt(0).toUpperCase() + dayType.slice(1);
 
@@ -111,7 +140,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {tab === 'library' ? (
-          <div className="px-4 py-4 space-y-4">
+          <div className="px-4 py-4 space-y-3">
             <input
               autoFocus
               type="text"
@@ -120,6 +149,23 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
               placeholder="Search exercises..."
               className="w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
+
+            {/* Muscle group filter chips */}
+            <div className="flex gap-2 flex-wrap">
+              {availableMuscles.map(m => (
+                <button
+                  key={m}
+                  onClick={() => setMuscleFilter(prev => prev === m ? null : m)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                    muscleFilter === m
+                      ? 'bg-[#f5f5f5] border-[#f5f5f5] text-[#0a0a0a]'
+                      : 'bg-[#262626] border-[#404040] text-[#737373] hover:border-[#737373]'
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
 
             {forThisDay.length > 0 && (
               <div>
@@ -203,18 +249,26 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-[#737373] uppercase tracking-wider">Muscle Groups</label>
-              <input
-                type="text"
-                value={muscles}
-                onChange={e => setMuscles(e.target.value)}
-                placeholder="e.g. Chest, Triceps (comma separated)"
-                className="mt-2 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
-              />
+              <label className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-3 block">Muscle Groups</label>
+              <div className="flex gap-2 flex-wrap">
+                {ALL_MUSCLE_GROUPS.map(m => (
+                  <button
+                    key={m}
+                    onClick={() => toggleMuscle(m)}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                      selectedMuscles.includes(m)
+                        ? 'bg-[#f5f5f5] border-[#f5f5f5] text-[#0a0a0a]'
+                        : 'bg-[#262626] border-[#404040] text-[#737373] hover:border-[#737373]'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <label className="text-xs font-bold text-[#737373] uppercase tracking-wider">Training Days</label>
                 {suggested.length > 0 && name.length > 2 && (
                   <span className="flex items-center gap-1 text-xs text-[#fafafa] font-medium">

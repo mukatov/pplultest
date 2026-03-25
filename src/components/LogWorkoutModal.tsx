@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus } from 'lucide-react';
+import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry } from '../types';
@@ -21,7 +21,15 @@ function relativeDate(dateStr: string): string {
   return `${Math.floor(diffDays / 30)}mo ago`;
 }
 
-function SetGrid({ sets, highlightMax }: { sets: SetEntry[]; highlightMax: boolean }) {
+function SetGrid({
+  sets,
+  highlightMax,
+  onRemove,
+}: {
+  sets: SetEntry[];
+  highlightMax: boolean;
+  onRemove?: (index: number) => void;
+}) {
   if (sets.length === 0) return null;
   const maxW = highlightMax ? Math.max(...sets.map(s => s.weight)) : -1;
   return (
@@ -31,8 +39,16 @@ function SetGrid({ sets, highlightMax }: { sets: SetEntry[]; highlightMax: boole
         return (
           <div
             key={i}
-            className={`bg-[#262626] rounded-xl py-3 px-4 flex flex-col items-center gap-1 ${isPR ? 'border border-[#fcd34d]' : ''}`}
+            className={`bg-[#262626] rounded-xl py-3 px-4 flex flex-col items-center gap-1 relative ${isPR ? 'border border-[#fcd34d]' : ''}`}
           >
+            {onRemove && (
+              <button
+                onClick={() => onRemove(i)}
+                className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-[#404040] text-[#a3a3a3] active:bg-[#525252]"
+              >
+                <X size={10} />
+              </button>
+            )}
             <div className="flex items-end gap-1">
               <span className={`text-xl font-semibold ${isPR ? 'text-[#fcd34d]' : 'text-[#a3a3a3]'}`}>{s.weight}</span>
               <span className={`text-xs uppercase tracking-[1.5px] mb-0.5 ${isPR ? 'text-[#fcd34d]' : 'text-[#a3a3a3]'}`}>KG</span>
@@ -142,7 +158,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
 
   const currentSetNumber = completedSets.length + 1;
 
-  const handleNextSet = () => {
+  const handleAddSet = () => {
     const nextIndex = completedSets.length + 1;
     setCompletedSets(prev => [...prev, { weight, reps }]);
     const nextLastSet = lastWorkout?.sets?.[nextIndex];
@@ -152,9 +168,13 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
     }
   };
 
+  const handleRemoveSet = (index: number) => {
+    setCompletedSets(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = () => {
-    if (!currentUser) return;
-    logWorkout(exerciseId, [...completedSets, { weight, reps }], dayType, currentUser.id);
+    if (!currentUser || completedSets.length === 0) return;
+    logWorkout(exerciseId, completedSets, dayType, currentUser.id);
     setSaved(true);
     setTimeout(onClose, 700);
   };
@@ -218,7 +238,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
       <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
         {mode === 'session' ? (
           <>
-            <SetGrid sets={completedSets} highlightMax />
+            <SetGrid sets={completedSets} highlightMax onRemove={handleRemoveSet} />
             <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
               SET {currentSetNumber}
             </p>
@@ -251,16 +271,16 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, onC
       {/* Bottom action bar */}
       <div className="px-4 py-3 pb-8 flex gap-2 flex-shrink-0 backdrop-blur-sm bg-[rgba(23,23,23,0.8)]">
         <button
-          onClick={mode === 'history' ? () => setMode('session') : handleNextSet}
+          onClick={mode === 'history' ? () => setMode('session') : handleAddSet}
           disabled={saved}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border border-[#404040] bg-[rgba(255,255,255,0.05)] text-[#fafafa] font-medium text-base transition-all active:scale-[0.98]"
         >
-          {mode === 'history' ? 'ADD SET' : 'NEXT SET'} <ChevronRight size={16} />
+          ADD SET <ChevronRight size={16} />
         </button>
         <button
           onClick={handleSave}
-          disabled={saved}
-          className={`w-12 h-12 flex items-center justify-center bg-[#f5f5f5] rounded-full flex-shrink-0 transition-all active:scale-[0.98] ${saved ? 'opacity-50' : ''}`}
+          disabled={saved || completedSets.length === 0}
+          className={`w-12 h-12 flex items-center justify-center bg-[#f5f5f5] rounded-full flex-shrink-0 transition-all active:scale-[0.98] ${saved || completedSets.length === 0 ? 'opacity-40' : ''}`}
         >
           <Check size={16} className="text-[#0a0a0a]" />
         </button>

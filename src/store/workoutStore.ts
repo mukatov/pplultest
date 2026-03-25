@@ -52,6 +52,17 @@ const LEGS_DAY: Day = { type: 'legs', label: 'Legs', color: 'purple', exerciseId
 const UPPER_DAY: Day = { type: 'upper', label: 'Upper', color: 'blue', exerciseIds: ['bench-press', 'barbell-row', 'overhead-press', 'lat-pulldown', 'lateral-raise', 'hammer-curl', 'tricep-pushdown'] };
 const LOWER_DAY: Day = { type: 'lower', label: 'Lower', color: 'cyan', exerciseIds: ['squat', 'deadlift', 'romanian-deadlift', 'leg-press', 'leg-curl', 'calf-raise'] };
 
+function generateId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+}
+
 export const BUILT_IN_SPLITS: Split[] = [
   {
     id: 'pplul',
@@ -144,7 +155,7 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       logWorkout: (exerciseId, sets, dayType, userId) => {
         const entry: WorkoutSet = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           exerciseId: `${userId}:${exerciseId}`,
           sets,
           date: new Date().toISOString(),
