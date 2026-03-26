@@ -205,6 +205,7 @@ interface WorkoutState {
   addExercise: (exercise: Exercise) => void;
   updateExercise: (exercise: Exercise) => void;
   deleteExercise: (id: string) => void;
+  removeWorkout: (id: string) => void;
 
   logWorkout: (exerciseId: string, sets: SetEntry[], dayType: DayType, userId: string, supersetId?: string) => void;
   getLastWorkout: (exerciseId: string, userId: string) => WorkoutSet | undefined;
@@ -256,6 +257,9 @@ export const useWorkoutStore = create<WorkoutState>()(
             })),
           })),
         })),
+
+      removeWorkout: (id) =>
+        set(state => ({ workoutSets: state.workoutSets.filter(ws => ws.id !== id) })),
 
       logWorkout: (exerciseId, sets, dayType, userId, supersetId?) => {
         const entry: WorkoutSet = {
