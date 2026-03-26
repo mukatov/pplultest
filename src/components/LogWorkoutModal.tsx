@@ -250,21 +250,32 @@ function Stepper({ value, onChange, step, min, label, unit }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, supersetId, onClose }: Props) {
-  const { logWorkout, getLastWorkout, getWorkoutHistory } = useWorkoutStore();
+  const { logWorkout, removeWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
 
-  const lastWorkout   = currentUser ? getLastWorkout(exerciseId, currentUser.id) : undefined;
-  const history       = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
-  const historyDesc   = [...history].reverse(); // newest first
+  const allHistory  = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
+  const todayStr    = new Date().toDateString();
+  // Session logged earlier today (kept in "current session", not yet in history)
+  const todaySession = [...allHistory].reverse().find(ws => new Date(ws.date).toDateString() === todayStr);
+  // History excludes today — shown only after the session finishes
+  const history     = allHistory.filter(ws => new Date(ws.date).toDateString() !== todayStr);
+  const historyDesc = [...history].reverse();
+  // Reference workout = most recent previous-day session
+  const prevWorkout = history.length > 0 ? history[history.length - 1] : undefined;
 
-  const lastMaxW = lastWorkout ? Math.max(...lastWorkout.sets.map(s => s.weight)) : null;
-  const lastMaxR = lastWorkout ? (lastWorkout.sets.find(s => s.weight === lastMaxW)?.reps ?? null) : null;
+  const lastMaxW = prevWorkout ? Math.max(...prevWorkout.sets.map(s => s.weight)) : null;
+  const lastMaxR = prevWorkout ? (prevWorkout.sets.find(s => s.weight === lastMaxW)?.reps ?? null) : null;
 
-  // Session state
+  // Session state — pre-populate from today's session if re-opening after partial log
+  const initSets   = todaySession?.sets ?? [];
+  const lastTodaySet = todaySession?.sets?.[todaySession.sets.length - 1];
+  const initWeight = lastTodaySet?.weight ?? prevWorkout?.sets?.[0]?.weight ?? 20;
+  const initReps   = lastTodaySet?.reps   ?? prevWorkout?.sets?.[0]?.reps   ?? 12;
+
   const [mode, setMode]           = useState<'session' | 'history'>('session');
-  const [completedSets, setComp]  = useState<SetEntry[]>([]);
-  const [weight, setWeight]       = useState(lastWorkout?.sets?.[0]?.weight ?? 20);
-  const [reps,   setReps]         = useState(lastWorkout?.sets?.[0]?.reps   ?? 12);
+  const [completedSets, setComp]  = useState<SetEntry[]>(initSets);
+  const [weight, setWeight]       = useState(initWeight);
+  const [reps,   setReps]         = useState(initReps);
   const [saved,  setSaved]        = useState(false);
 
   // Chart state
@@ -316,12 +327,14 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   const handleAddSet = () => {
     const nextIdx = completedSets.length + 1;
     setComp(prev => [...prev, { weight, reps }]);
-    const nextSet = lastWorkout?.sets?.[nextIdx];
+    const nextSet = prevWorkout?.sets?.[nextIdx];
     if (nextSet) { setWeight(nextSet.weight); setReps(nextSet.reps); }
   };
   const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));
   const handleSave = () => {
     if (!currentUser || completedSets.length === 0) return;
+    // Replace today's partial session so history only ever has one entry per day
+    if (todaySession) removeWorkout(todaySession.id);
     logWorkout(exerciseId, completedSets, dayType, currentUser.id, supersetId);
     setSaved(true);
     setTimeout(onClose, 700);
@@ -348,11 +361,11 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
               <span className="text-xl font-semibold text-[#0a0a0a] uppercase truncate px-2">{exerciseName}</span>
               <span className="text-xs text-[#0a0a0a]">current session</span>
             </div>
-            {lastWorkout && lastMaxW !== null && (
+            {prevWorkout && lastMaxW !== null && (
               <button onClick={() => setMode('history')}
                 className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform">
                 <span className="text-xl font-semibold text-[#fafafa]">{lastMaxW}×{lastMaxR}</span>
-                <span className="text-xs text-[#737373]">{relativeDate(lastWorkout.date)}</span>
+                <span className="text-xs text-[#737373]">{relativeDate(prevWorkout.date)}</span>
               </button>
             )}
           </>

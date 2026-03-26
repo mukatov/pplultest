@@ -158,7 +158,6 @@ export default function TrainingDay() {
         transition: 'none',
         zIndex: 20,
         position: 'relative',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
         opacity: 0.95,
       };
     }
