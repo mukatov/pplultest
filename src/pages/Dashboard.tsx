@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Legend, Cell
 } from 'recharts';
-import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft } from 'lucide-react';
+import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft, Download } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 
@@ -23,6 +23,36 @@ export default function Dashboard() {
   const { currentUser } = useAuthStore();
 
   const [selectedExercise, setSelectedExercise] = useState<string>('');
+
+  const handleExport = () => {
+    const rows: string[][] = [['Date', 'Day', 'Exercise', 'Set', 'Weight (kg)', 'Reps', 'Volume (kg)']];
+    const sorted = [...userSets].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    for (const ws of sorted) {
+      const exerciseId = ws.exerciseId.split(':').slice(1).join(':');
+      const exercise = exercises.find(e => e.id === exerciseId);
+      const day = trainingDays.find(d => d.type === ws.dayType);
+      const date = new Date(ws.date).toLocaleDateString('en-GB');
+      ws.sets.forEach((s, i) => {
+        rows.push([
+          date,
+          day?.label ?? ws.dayType,
+          exercise?.name ?? exerciseId,
+          String(i + 1),
+          String(s.weight),
+          String(s.reps),
+          String(s.weight * s.reps),
+        ]);
+      });
+    }
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'workout_history.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (!currentUser) return null;
 
@@ -85,7 +115,13 @@ export default function Dashboard() {
         <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
           STATS
         </h1>
-        <div className="w-10" />
+        <button
+          onClick={handleExport}
+          className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
+          title="Export to CSV"
+        >
+          <Download size={16} className="text-[#fafafa]" />
+        </button>
       </div>
 
       <div className="px-4 pb-12 space-y-6">

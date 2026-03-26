@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import TrainingDay from './pages/TrainingDay';
 import Settings from './pages/Settings';
 import CreateSplitPage from './pages/CreateSplitPage';
+import ProfilePage from './pages/ProfilePage';
 
 function AuthGuard() {
   const { currentUser } = useAuthStore();
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/new-split" element={<CreateSplitPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/:day" element={<TrainingDay />} />
           </Route>
         </Route>

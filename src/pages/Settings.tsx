@@ -24,6 +24,7 @@ export default function Settings() {
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {splits.map(split => (
+
           <div
             key={split.id}
             className="flex items-center gap-3 bg-[#262626] rounded-2xl px-4 py-4"
@@ -53,6 +54,9 @@ export default function Settings() {
           </div>
         ))}
 
+      </div>
+
+      <div className="px-4 py-6 flex-shrink-0">
         <button
           onClick={() => navigate('/settings/new-split')}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#737373] hover:text-[#a3a3a3] transition-colors"

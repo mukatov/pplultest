@@ -386,7 +386,7 @@ export default function TrainingDay() {
       </div>
 
       {/* Bottom — Finish session (always visible, primary style) */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 flex-shrink-0">
         <button
           onClick={() => setShowFinishConf(true)}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-base active:scale-[0.98] hover:bg-white transition-colors"
