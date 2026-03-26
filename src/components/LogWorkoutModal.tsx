@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown, Link2 } from 'lucide-react';
+import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown, Link2, Download } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry, WorkoutSet } from '../types';
@@ -331,6 +331,24 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
     if (nextSet) { setWeight(nextSet.weight); setReps(nextSet.reps); }
   };
   const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));
+  const handleExportHistory = () => {
+    const rows: string[][] = [['Date', 'Set', 'Weight (kg)', 'Reps', 'Volume (kg)']];
+    for (const ws of historyDesc) {
+      const date = new Date(ws.date).toLocaleDateString('en-GB');
+      ws.sets.forEach((s, i) => {
+        rows.push([date, String(i + 1), String(s.weight), String(s.reps), String(s.weight * s.reps)]);
+      });
+    }
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exerciseName.replace(/\s+/g, '_')}_history.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSave = () => {
     if (!currentUser || completedSets.length === 0) return;
     // Replace today's partial session so history only ever has one entry per day
@@ -380,6 +398,15 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
               <span className="text-xl font-semibold text-[#0a0a0a] uppercase truncate px-2">{exerciseName}</span>
               <span className="text-xs text-[#0a0a0a] uppercase tracking-[1px]">HISTORY</span>
             </div>
+            {historyDesc.length > 0 && (
+              <button
+                onClick={handleExportHistory}
+                className="w-12 h-12 flex items-center justify-center bg-[#262626] rounded-full flex-shrink-0 active:scale-[0.97] transition-transform"
+                title="Export history"
+              >
+                <Download size={16} className="text-[#fafafa]" />
+              </button>
+            )}
           </>
         )}
       </div>

@@ -161,7 +161,7 @@ export default function SupersetModal({ dayType, onClose }: Props) {
       </div>
 
       {/* Save button */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 flex-shrink-0">
         <button
           onClick={handleCreate}
           disabled={selected.length < 2}

@@ -237,9 +237,10 @@ export default function CreateSplitPage() {
           </button>
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+      </div>
 
-        {/* Create button */}
+      <div className="px-4 pb-8 pt-3 flex-shrink-0">
+        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
         <button
           onClick={handleCreate}
           className="w-full py-4 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-base font-medium transition-colors"
