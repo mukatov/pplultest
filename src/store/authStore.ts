@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 export interface User {
   id: string;
@@ -31,12 +31,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   initialize: () => {
     // Hydrate from existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      set({ currentUser: session?.user ? mapUser(session.user) : null, loading: false });
+    supabase.auth.getSession().then(({ data }) => {
+      set({ currentUser: data.session?.user ? mapUser(data.session.user) : null, loading: false });
     });
 
     // Keep in sync; skip PASSWORD_RECOVERY — handled in App.tsx
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (event === 'PASSWORD_RECOVERY') return;
       set({ currentUser: session?.user ? mapUser(session.user) : null, loading: false });
     });
