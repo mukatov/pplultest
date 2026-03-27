@@ -1,11 +1,8 @@
 export type DayType = string;
 
-export interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  createdAt: string;
-}
+// User type is defined in authStore.ts (Supabase-backed)
+// Re-exported here for convenience
+export type { User } from './store/authStore';
 
 export interface Exercise {
   id: string;

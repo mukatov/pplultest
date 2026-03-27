@@ -55,7 +55,7 @@ export default function Home() {
 
   const today = DAYS_OF_WEEK[new Date().getDay()];
   const handleStart  = () => navigate(`/${selected}`);
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = async () => { await logout(); navigate('/login'); };
   const handleUndo   = () => {
     if (toastTimer.current) clearInterval(toastTimer.current);
     setToast(null);
