@@ -31,9 +31,14 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   initialize: () => {
     // Hydrate from existing session
-    supabase.auth.getSession().then(({ data }) => {
-      set({ currentUser: data.session?.user ? mapUser(data.session.user) : null, loading: false });
-    });
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        set({ currentUser: data.session?.user ? mapUser(data.session.user) : null, loading: false });
+      })
+      .catch(() => {
+        // Network error or bad credentials — still stop the loading spinner
+        set({ loading: false });
+      });
 
     // Keep in sync; skip PASSWORD_RECOVERY — handled in App.tsx
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
