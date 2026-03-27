@@ -3,6 +3,7 @@ import { Play, Menu, BarChart2, Settings, User, LogOut } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { triggerHaptic } from '../utils/haptic';
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -54,7 +55,7 @@ export default function Home() {
   if (!currentUser) return null;
 
   const today = DAYS_OF_WEEK[new Date().getDay()];
-  const handleStart  = () => navigate(`/${selected}`);
+  const handleStart  = () => { triggerHaptic(12); navigate(`/${selected}`); };
   const handleLogout = async () => { await logout(); navigate('/login'); };
   const handleUndo   = () => {
     if (toastTimer.current) clearInterval(toastTimer.current);
@@ -75,7 +76,10 @@ export default function Home() {
         const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - containerCenter);
         if (dist < minDist) { minDist = dist; closest = day.type; }
       }
-      if (closest) setSelected(closest);
+      if (closest && closest !== selected) {
+        triggerHaptic(8);
+        setSelected(closest);
+      }
     });
   };
 
@@ -121,8 +125,13 @@ export default function Home() {
                   key={day.type}
                   ref={el => { if (el) cardRefs.current[day.type] = el; }}
                   onClick={() => {
-                    setSelected(day.type);
-                    cardRefs.current[day.type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    triggerHaptic(10);
+                    if (selected === day.type) {
+                      navigate(`/${day.type}`);
+                    } else {
+                      setSelected(day.type);
+                      cardRefs.current[day.type]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
                   }}
                   style={{ scrollSnapAlign: 'center' }}
                   className={`flex-shrink-0 flex flex-col items-center justify-center rounded-3xl transition-all duration-300 ease-out active:scale-95 ${

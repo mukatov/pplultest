@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Minus, Plus, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { triggerHaptic } from '../utils/haptic';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
@@ -18,7 +18,6 @@ function Stepper({ value, onChange, step, min, label, unit, className }: {
   const [dragging, setDragging] = useState(false);
 
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     dragRef.current = { lastY: e.clientY };
     trackRef.current?.setPointerCapture(e.pointerId);
@@ -31,20 +30,12 @@ function Stepper({ value, onChange, step, min, label, unit, className }: {
   };
   const onUp = () => { dragRef.current = null; setDragging(false); };
 
-  const numWidthClass = step % 1 !== 0 ? 'w-[6ch]' : 'w-[4ch]';
-
   return (
-    <div className={`bg-[#262626] rounded-3xl flex flex-col items-center gap-2 py-5 px-6 transition-colors ${className ?? 'flex-1'} ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
+    <div className={`bg-[#262626] rounded-3xl flex flex-col items-center gap-2 py-5 px-4 transition-colors ${className ?? 'flex-1'} ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
       <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{label}</p>
       <div ref={trackRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-        style={{ touchAction: 'none' }} className="flex items-center justify-between w-full cursor-ns-resize select-none">
-        <button onClick={dec} className={`w-6 h-6 flex items-center justify-center rounded-[4px] transition-opacity ${value <= min ? 'opacity-30' : ''}`}>
-          <Minus size={16} className="text-[#fafafa]" />
-        </button>
-        <span className={`text-5xl font-mono text-[#fafafa] text-center leading-[48px] shrink-0 ${numWidthClass}`}>{value}</span>
-        <button onClick={inc} className="w-6 h-6 flex items-center justify-center rounded-[4px]">
-          <Plus size={16} className="text-[#fafafa]" />
-        </button>
+        style={{ touchAction: 'none' }} className="w-full cursor-ns-resize select-none flex items-center justify-center">
+        <span className="text-5xl font-mono text-[#fafafa] text-center w-full leading-[48px]">{value}</span>
       </div>
       {unit && <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{unit}</p>}
     </div>

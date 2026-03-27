@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trophy, ChevronLeft, Clock, Link2, X, GripVertical, CheckCircle2 } from 'lucide-react';
+import { triggerHaptic } from '../utils/haptic';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Exercise, Superset } from '../types';
@@ -111,7 +112,7 @@ export default function TrainingDay() {
     setDragIdx(idx);
     setTargetIdx(idx);
     setDragDeltaY(0);
-    navigator.vibrate?.(15);
+    triggerHaptic(15);
   }, []);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -124,7 +125,10 @@ export default function TrainingDay() {
       if (y < rect.bottom) { newTarget = i; break; }
       newTarget = i;
     }
-    setTargetIdx(newTarget);
+    setTargetIdx(prev => {
+      if (newTarget !== prev) triggerHaptic(8);
+      return newTarget;
+    });
   }, [dragIdx]);
 
   const onPointerUp = useCallback(() => {
@@ -194,7 +198,7 @@ export default function TrainingDay() {
 
     return (
       <button
-        onClick={() => setLogState({ exerciseId: exercise.id, supersetId })}
+        onClick={() => { triggerHaptic(10); setLogState({ exerciseId: exercise.id, supersetId }); }}
         className={`w-full flex items-center gap-3 px-4 py-5 rounded-2xl transition-colors active:scale-[0.98] ${
           doneToday ? 'bg-[#262626] border border-[#0d9488]' : 'bg-[#262626] hover:bg-[#2e2e2e]'
         }`}
@@ -388,7 +392,7 @@ export default function TrainingDay() {
       {/* Bottom — Finish session (always visible, primary style) */}
       <div className="px-4 py-6 flex-shrink-0">
         <button
-          onClick={() => setShowFinishConf(true)}
+          onClick={() => { triggerHaptic(12); setShowFinishConf(true); }}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-base active:scale-[0.98] hover:bg-white transition-colors"
         >
           <CheckCircle2 size={18} className="text-[#0a0a0a]" />
