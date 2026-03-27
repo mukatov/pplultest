@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Loader2 } from 'lucide-react';
+import { useT } from '../hooks/useT';
 
 function GoogleIcon() {
   return (
@@ -25,6 +26,7 @@ function AppleIcon() {
 export default function Login() {
   const navigate = useNavigate();
   const { login, loginWithGoogle, loginWithApple } = useAuthStore();
+  const t = useT();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -62,7 +64,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">PPL/UL</h1>
-          <p className="text-[#737373] text-sm mt-2">Sign in to your account</p>
+          <p className="text-[#737373] text-sm mt-2">{t.signInToAccount}</p>
         </div>
 
         {/* OAuth buttons */}
@@ -72,20 +74,20 @@ export default function Login() {
             className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-[#262626] border border-[#404040] text-[#fafafa] text-sm font-medium hover:bg-[#2e2e2e] transition-colors active:scale-[0.98]"
           >
             <GoogleIcon />
-            Continue with Google
+            {t.continueGoogle}
           </button>
           <button
             onClick={handleApple}
             className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-[#262626] border border-[#404040] text-[#fafafa] text-sm font-medium hover:bg-[#2e2e2e] transition-colors active:scale-[0.98]"
           >
             <AppleIcon />
-            Continue with Apple
+            {t.continueApple}
           </button>
         </div>
 
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-px bg-[#2a2a2a]" />
-          <span className="text-xs text-[#525252] uppercase tracking-wider">or</span>
+          <span className="text-xs text-[#525252] uppercase tracking-wider">{t.or}</span>
           <div className="flex-1 h-px bg-[#2a2a2a]" />
         </div>
 
@@ -97,24 +99,24 @@ export default function Login() {
           )}
 
           <div>
-            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Email</label>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">{t.email}</label>
             <input
               autoFocus
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder={t.emailPlaceholder}
               className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
           </div>
 
           <div>
-            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Password</label>
+            <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">{t.password}</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t.passwordPlaceholder}
               className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
             />
           </div>
@@ -125,19 +127,19 @@ export default function Login() {
             className="w-full py-3 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-sm font-medium transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-            Sign In
+            {t.signIn}
           </button>
 
           <p className="text-center text-sm text-[#737373]">
             <Link to="/forgot-password" className="text-[#fafafa] hover:text-white transition-colors font-medium">
-              Forgot password?
+              {t.forgotPassword}
             </Link>
           </p>
 
           <p className="text-center text-sm text-[#737373]">
-            No account?{' '}
+            {t.noAccount}{' '}
             <Link to="/register" className="text-[#fafafa] hover:text-white transition-colors font-medium">
-              Register
+              {t.register}
             </Link>
           </p>
         </form>

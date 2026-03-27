@@ -2,11 +2,13 @@ import { ChevronLeft, User, Dumbbell, Trophy, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useWorkoutStore } from '../store/workoutStore';
+import { useT } from '../hooks/useT';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { currentUser } = useAuthStore();
   const { workoutSets, personalRecords } = useWorkoutStore();
+  const t = useT();
 
   if (!currentUser) return null;
 
@@ -30,7 +32,7 @@ export default function ProfilePage() {
           <ChevronLeft size={16} className="text-[#fafafa]" />
         </button>
         <h1 className="flex-1 text-center text-2xl font-semibold tracking-[-0.5px] text-[#fafafa]">
-          Profile
+          {t.profile}
         </h1>
         <div className="w-10" />
       </div>
@@ -49,11 +51,11 @@ export default function ProfilePage() {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          {([
-            { label: 'Sessions', value: userSets.length, icon: Dumbbell },
-            { label: 'Records',  value: userPRs.length,  icon: Trophy   },
-            { label: 'Joined',   value: new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), icon: Calendar },
-          ] as const).map(({ label, value, icon: Icon }) => (
+          {[
+            { label: t.sessions, value: userSets.length, icon: Dumbbell },
+            { label: t.records,  value: userPRs.length,  icon: Trophy   },
+            { label: t.joined,   value: new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), icon: Calendar },
+          ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-[#262626] rounded-2xl p-4 flex flex-col items-center gap-1">
               <Icon size={16} className="text-[#737373]" />
               <p className="text-xl font-bold text-[#fafafa]">{value}</p>
@@ -65,8 +67,8 @@ export default function ProfilePage() {
         {/* Account info */}
         <div className="bg-[#262626] rounded-2xl overflow-hidden">
           {[
-            { label: 'Email',         value: currentUser.email },
-            { label: 'Member since',  value: memberSince       },
+            { label: t.emailLabel,    value: currentUser.email },
+            { label: t.memberSince,   value: memberSince       },
           ].map(({ label, value }) => (
             <div key={label} className="px-4 py-4 flex items-center justify-between border-b border-[#333] last:border-0">
               <p className="text-[#737373] text-sm">{label}</p>

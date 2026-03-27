@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Superset, DayType, SetEntry } from '../types';
@@ -61,6 +62,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   const [completed, setCompleted]   = useState<Record<string, SetEntry[]>>({});
   const [saved, setSaved]           = useState(false);
   const scrollHapticRef = useRef(0);
+  const t = useT();
 
   const exObjects = superset.exerciseIds.map(id => exercises.find(e => e.id === id)).filter(Boolean);
   const currentEx = exObjects[currentIdx];
@@ -117,7 +119,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   const currentSets = completed[currentEx.id] ?? [];
   const nextEx = isLastInChain ? exObjects[0] : exObjects[currentIdx + 1];
   const nextLabel = isLastInChain
-    ? `Round ${round + 1} · ${exObjects[0]?.name}`
+    ? `${t.round} ${round + 1} · ${exObjects[0]?.name}`
     : nextEx?.name;
 
   return (
@@ -129,7 +131,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         </button>
         <div className="flex-1 text-center">
           <h1 className="text-xl font-semibold text-[#fafafa] uppercase tracking-wide leading-none">{currentEx.name}</h1>
-          <p className="text-xs text-[#737373] mt-1 uppercase tracking-[1.5px]">Round {round}</p>
+          <p className="text-xs text-[#737373] mt-1 uppercase tracking-[1.5px]">{t.round} {round}</p>
         </div>
         <div className="w-10" />
       </div>
@@ -174,11 +176,11 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
       {/* Inputs pinned below header */}
       <div className="flex-shrink-0 px-4 pt-2 pb-4 flex flex-col gap-3">
         <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
-          SET {currentSets.length + 1}
+          {t.set.toUpperCase()} {currentSets.length + 1}
         </p>
         <div className="flex gap-2.5">
-          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
-          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
+          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
+          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label={t.reps}             className="flex-[2]" />
         </div>
       </div>
 
@@ -196,7 +198,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         {currentSets.length > 0 && (
           <div className="bg-[#262626] rounded-2xl p-3">
             <p className="text-[10px] text-[#525252] uppercase tracking-[1.5px] mb-2 text-center">
-              {currentSets.length} {currentSets.length === 1 ? 'set' : 'sets'} logged this session
+              {currentSets.length} {t.setsLoggedSession}
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {currentSets.map((s, i) => (
@@ -217,7 +219,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
           onClick={handleLogAndAdvance}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-sm active:scale-[0.98] transition-transform"
         >
-          Log Set
+          {t.logSet}
           <span className="flex items-center gap-1 text-[#737373] font-normal">
             <ChevronRight size={14} />
             {nextLabel}
@@ -234,7 +236,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
                 : 'bg-[#262626] text-[#fafafa] border border-[#404040]'
             }`}
           >
-            {saved ? '✓ Saved' : `Finish Superset · ${totalSetsAcrossAll} sets`}
+            {saved ? t.saved : `${t.finishSuperset} · ${totalSetsAcrossAll} ${t.sets}`}
           </button>
         )}
       </div>

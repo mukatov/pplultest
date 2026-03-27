@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, Check, Search } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { DayType } from '../types';
+import { useT } from '../hooks/useT';
 
 interface Props {
   dayType: DayType;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function EditDayModal({ dayType, onClose }: Props) {
+  const t = useT();
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { exercises, updateDayExercises } = useWorkoutStore();
@@ -45,13 +47,13 @@ export default function EditDayModal({ dayType, onClose }: Props) {
         </button>
         <div className="flex-1">
           <h1 className="text-base font-bold text-[#fafafa] leading-tight uppercase">{dayLabel} Day</h1>
-          <p className="text-xs text-[#737373]">{selected.length} exercises selected</p>
+          <p className="text-xs text-[#737373]">{selected.length} {t.exercisesSelected}</p>
         </div>
         <button
           onClick={handleSave}
           className="px-4 py-2 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-sm font-medium transition-colors"
         >
-          Save
+          {t.save}
         </button>
       </div>
 
@@ -64,7 +66,7 @@ export default function EditDayModal({ dayType, onClose }: Props) {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search exercises..."
+            placeholder={t.searchExercises}
             className="w-full bg-[#262626] border border-[#404040] rounded-xl pl-9 pr-3 py-2.5 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
           />
         </div>
@@ -96,7 +98,7 @@ export default function EditDayModal({ dayType, onClose }: Props) {
               </div>
               {isSuggested && (
                 <span className="text-xs px-2 py-1 rounded-lg bg-[#171717] text-[#737373] border border-[#404040] font-medium flex-shrink-0">
-                  Suggested
+                  {t.suggested}
                 </span>
               )}
             </button>
@@ -110,7 +112,7 @@ export default function EditDayModal({ dayType, onClose }: Props) {
           onClick={handleSave}
           className="w-full py-3 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-base font-medium transition-colors"
         >
-          Save Changes · {selected.length} exercises
+          {t.saveChangesWith(selected.length)}
         </button>
       </div>
     </div>

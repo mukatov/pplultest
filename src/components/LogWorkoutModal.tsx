@@ -4,6 +4,8 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry, WorkoutSet } from '../types';
 import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
+import type { T } from '../lib/i18n';
 
 interface Props {
   exerciseId: string;
@@ -18,39 +20,33 @@ interface Props {
 type ChartMetric = 'maxWeight' | 'totalVolume' | 'maxReps' | 'est1rm';
 type TimeRange   = '1w' | '1m' | '3m' | '6m' | '1y' | 'all';
 
-const METRIC_LABELS: Record<ChartMetric, string> = {
-  maxWeight:   'Max Weight',
-  totalVolume: 'Total Volume',
-  maxReps:     'Max Reps',
-  est1rm:      'Est. 1RM',
-};
-const METRIC_UNIT: Record<ChartMetric, string> = {
+const METRIC_UNIT: Record<ChartMetric, 'KG' | 'reps'> = {
   maxWeight:   'KG',
   totalVolume: 'KG',
   maxReps:     'reps',
   est1rm:      'KG',
 };
 const TIME_RANGES: { label: string; value: TimeRange; days: number }[] = [
-  { label: '1W',       value: '1w',  days: 7   },
-  { label: '1M',       value: '1m',  days: 30  },
-  { label: '3M',       value: '3m',  days: 90  },
-  { label: '6M',       value: '6m',  days: 180 },
-  { label: '1Y',       value: '1y',  days: 365 },
-  { label: 'ALL TIME', value: 'all', days: Infinity },
+  { label: '1W',  value: '1w',  days: 7   },
+  { label: '1M',  value: '1m',  days: 30  },
+  { label: '3M',  value: '3m',  days: 90  },
+  { label: '6M',  value: '6m',  days: 180 },
+  { label: '1Y',  value: '1y',  days: 365 },
+  { label: 'ALL', value: 'all', days: Infinity },
 ];
 
 const BATCH = 6; // sessions per lazy-load batch
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function relativeDate(dateStr: string): string {
+function relativeDate(dateStr: string, t: T): string {
   const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
-  if (d === 0) return 'today';
-  if (d === 1) return 'yesterday';
-  if (d < 7)  return `${d}d ago`;
-  if (d < 14) return 'last week';
-  if (d < 30) return `${Math.floor(d / 7)}w ago`;
-  return `${Math.floor(d / 30)}mo ago`;
+  if (d === 0) return t.today;
+  if (d === 1) return t.yesterday;
+  if (d < 7)  return t.dAgo(d);
+  if (d < 14) return t.lastWeek;
+  if (d < 30) return t.wAgo(Math.floor(d / 7));
+  return t.moAgo(Math.floor(d / 30));
 }
 
 function computeMetric(ws: WorkoutSet, metric: ChartMetric): number {
@@ -140,16 +136,20 @@ function LineChart({
 // ─── Trend Dropdown ───────────────────────────────────────────────────────────
 
 function TrendDropdown({ value, onChange }: { value: ChartMetric; onChange: (m: ChartMetric) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const metrics: ChartMetric[] = ['maxWeight', 'totalVolume', 'maxReps', 'est1rm'];
+  const metricLabel: Record<ChartMetric, string> = {
+    maxWeight: t.maxWeight, totalVolume: t.totalVolume, maxReps: t.maxReps, est1rm: t.est1rm,
+  };
   return (
     <div className="relative z-10">
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2 bg-[rgba(255,255,255,0.05)] border border-[#404040] rounded-lg px-3 py-2 text-sm"
       >
-        <span className="text-[#a3a3a3]">Trend:</span>
-        <span className="text-[#fafafa] font-medium">{METRIC_LABELS[value]}</span>
+        <span className="text-[#a3a3a3]">{t.trend}</span>
+        <span className="text-[#fafafa] font-medium">{metricLabel[value]}</span>
         <ChevronDown size={13} className={`text-[#a3a3a3] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
@@ -162,7 +162,7 @@ function TrendDropdown({ value, onChange }: { value: ChartMetric; onChange: (m: 
                 m === value ? 'bg-[#262626] text-[#fafafa] font-medium' : 'text-[#a3a3a3] hover:bg-[#262626]'
               }`}
             >
-              {METRIC_LABELS[m]}
+              {metricLabel[m]}
             </button>
           ))}
         </div>
@@ -246,6 +246,7 @@ function Stepper({ value, onChange, step, min, label, unit, className }: {
 export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, supersetId, onClose }: Props) {
   const { logWorkout, removeWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
+  const t = useT();
 
   const allHistory  = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
   const todayStr    = new Date().toDateString();
@@ -383,13 +384,13 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
           <>
             <div className="flex-1 bg-[#f5f5f5] rounded-full py-3 flex flex-col items-center gap-1 min-w-0">
               <span className="text-xl font-semibold text-[#0a0a0a] uppercase truncate px-2">{exerciseName}</span>
-              <span className="text-xs text-[#0a0a0a]">current session</span>
+              <span className="text-xs text-[#0a0a0a]">{t.currentSession}</span>
             </div>
             {prevWorkout && lastMaxW !== null && (
               <button onClick={() => setMode('history')}
                 className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform">
                 <span className="text-xl font-semibold text-[#fafafa]">{lastMaxW}×{lastMaxR}</span>
-                <span className="text-xs text-[#737373]">{relativeDate(prevWorkout.date)}</span>
+                <span className="text-xs text-[#737373]">{relativeDate(prevWorkout.date, t)}</span>
               </button>
             )}
           </>
@@ -397,18 +398,18 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
           <>
             <button onClick={() => setMode('session')}
               className="bg-[#262626] rounded-full py-3 px-6 flex flex-col items-center gap-1 flex-shrink-0 active:scale-[0.97] transition-transform">
-              <span className="text-xl font-semibold text-[#fafafa]">BACK</span>
-              <span className="text-xs text-[#737373]">to session</span>
+              <span className="text-xl font-semibold text-[#fafafa]">{t.back}</span>
+              <span className="text-xs text-[#737373]">{t.toSession}</span>
             </button>
             <div className="flex-1 bg-[#f5f5f5] rounded-full py-3 flex flex-col items-center gap-1 min-w-0">
               <span className="text-xl font-semibold text-[#0a0a0a] uppercase truncate px-2">{exerciseName}</span>
-              <span className="text-xs text-[#0a0a0a] uppercase tracking-[1px]">HISTORY</span>
+              <span className="text-xs text-[#0a0a0a] uppercase tracking-[1px]">{t.history}</span>
             </div>
             {historyDesc.length > 0 && (
               <button
                 onClick={handleExportHistory}
                 className="w-12 h-12 flex items-center justify-center bg-[#262626] rounded-full flex-shrink-0 active:scale-[0.97] transition-transform"
-                title="Export history"
+                title={t.exportHistory}
               >
                 <Download size={16} className="text-[#fafafa]" />
               </button>
@@ -422,11 +423,11 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
         <>
           <div className="flex-shrink-0 px-4 pt-3 pb-4 flex flex-col gap-3">
             <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
-              SET {completedSets.length + 1}
+              {t.set.toUpperCase()} {completedSets.length + 1}
             </p>
             <div className="flex gap-2.5">
-              <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
-              <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
+              <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
+              <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label={t.reps}             className="flex-[2]" />
             </div>
           </div>
           <div
@@ -452,7 +453,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
                   <>
                     <div className="flex items-end gap-1 justify-end">
                       <span className="text-[30px] font-semibold text-[#fafafa] leading-none tracking-[-1px]">{displayValue}</span>
-                      <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">{METRIC_UNIT[chartMetric]}</span>
+                      <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">{METRIC_UNIT[chartMetric] === 'KG' ? t.kg : t.reps}</span>
                     </div>
                     {displayDate && (
                       <p className="text-[10px] text-[#525252] mt-0.5">{displayDate}</p>
@@ -478,7 +479,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
                 className={`flex-1 py-2 text-xs font-medium transition-colors ${
                   timeRange === r.value ? 'bg-[rgba(255,255,255,0.15)] text-[#fafafa]' : 'text-[#737373]'
                 } ${i > 0 ? 'border-l border-[#404040]' : ''}`}>
-                {r.label}
+                {r.value === 'all' ? t.allTime : r.label}
               </button>
             ))}
           </div>
@@ -507,7 +508,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
           )}
 
           {history.length === 0 && (
-            <p className="text-center text-[#737373] text-sm mt-4">No history yet</p>
+            <p className="text-center text-[#737373] text-sm mt-4">{t.noHistoryYet}</p>
           )}
         </div>
       )}
@@ -519,7 +520,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
           disabled={saved}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full border border-[#404040] bg-[rgba(255,255,255,0.05)] text-[#fafafa] font-medium text-base transition-all active:scale-[0.98]"
         >
-          ADD SET <ChevronRight size={16} />
+          {t.addSet} <ChevronRight size={16} />
         </button>
         <button
           onClick={handleSave}

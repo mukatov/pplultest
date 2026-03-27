@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
 import { Split, Day } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
+import { useT } from '../hooks/useT';
 
 function generateId(): string {
   try {
@@ -29,6 +30,7 @@ const ALL_MUSCLES = Array.from(
 ).sort();
 
 export default function CreateSplitPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { exercises, addSplit, setActiveSplit } = useWorkoutStore();
   const allExercises = [
@@ -45,9 +47,9 @@ export default function CreateSplitPage() {
 
   const handleCreate = () => {
     setError('');
-    if (!splitName.trim()) { setError('Split name is required'); return; }
-    if (days.length === 0) { setError('Add at least one day'); return; }
-    if (days.some(d => !d.label.trim())) { setError('All days need a name'); return; }
+    if (!splitName.trim()) { setError(t.errSplitName); return; }
+    if (days.length === 0) { setError(t.errAddDay); return; }
+    if (days.some(d => !d.label.trim())) { setError(t.errDayName); return; }
 
     const newSplit: Split = {
       id: generateId(),
@@ -102,7 +104,7 @@ export default function CreateSplitPage() {
           <ChevronLeft size={16} className="text-[#fafafa]" />
         </button>
         <h1 className="flex-1 text-center text-2xl font-semibold tracking-[-0.5px] text-[#fafafa]">
-          New Split
+          {t.newSplit}
         </h1>
         <div className="w-10" />
       </div>
@@ -110,20 +112,20 @@ export default function CreateSplitPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Split Name */}
         <div>
-          <label className="text-xs font-bold text-[#737373] uppercase tracking-wider">Split Name</label>
+          <label className="text-xs font-bold text-[#737373] uppercase tracking-wider">{t.splitName}</label>
           <input
             autoFocus
             type="text"
             value={splitName}
             onChange={e => { setSplitName(e.target.value); setError(''); }}
-            placeholder="e.g. My Custom Split"
+            placeholder={t.splitNamePlaceholder}
             className="mt-2 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
           />
         </div>
 
         {/* Days */}
         <div>
-          <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2">Days</p>
+          <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2">{t.days}</p>
           <div className="space-y-2">
             {days.map((day, idx) => (
               <div key={idx} className="bg-[#262626] rounded-2xl overflow-hidden">
@@ -134,13 +136,13 @@ export default function CreateSplitPage() {
                     className="flex-1 flex items-center gap-3 text-left"
                   >
                     <span className="text-xs font-bold text-[#525252] uppercase w-12 flex-shrink-0">
-                      Day {idx + 1}
+                      {t.day} {idx + 1}
                     </span>
                     <span className={`text-sm font-medium flex-1 ${day.label ? 'text-[#fafafa]' : 'text-[#525252]'}`}>
-                      {day.label || 'Untitled'}
+                      {day.label || t.untitled}
                     </span>
                     {day.exerciseIds.length > 0 && (
-                      <span className="text-xs text-[#737373]">{day.exerciseIds.length} exercises</span>
+                      <span className="text-xs text-[#737373]">{day.exerciseIds.length} {t.exercises}</span>
                     )}
                   </button>
                   {days.length > 1 && (
@@ -160,21 +162,21 @@ export default function CreateSplitPage() {
                       type="text"
                       value={day.label}
                       onChange={e => updateDay(idx, { label: e.target.value })}
-                      placeholder={`Day name (e.g. Push, Pull, Legs)`}
+                      placeholder={t.dayNamePlaceholder}
                       className="w-full bg-[#171717] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
                     />
 
                     {/* Exercise picker */}
                     <div>
                       <p className="text-xs text-[#737373] uppercase tracking-wider font-medium mb-2">
-                        Exercises
+                        {t.exercisesLabel}
                       </p>
                       {/* Search + muscle filter */}
                       <input
                         type="text"
                         value={exSearch}
                         onChange={e => setExSearch(e.target.value)}
-                        placeholder="Search exercises..."
+                        placeholder={t.searchExercises}
                         className="w-full bg-[#171717] border border-[#404040] rounded-xl px-4 py-2.5 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors mb-2"
                       />
                       <div className="flex gap-1.5 flex-wrap mb-3">
@@ -215,7 +217,7 @@ export default function CreateSplitPage() {
                           );
                         })}
                         {filteredExercises.length === 0 && (
-                          <p className="text-center text-[#525252] text-xs py-4">No exercises match</p>
+                          <p className="text-center text-[#525252] text-xs py-4">{t.noExercisesMatch}</p>
                         )}
                       </div>
                     </div>
@@ -233,7 +235,7 @@ export default function CreateSplitPage() {
             className="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#525252] hover:text-[#a3a3a3] transition-colors"
           >
             <Plus size={15} />
-            Add day
+            {t.addDay}
           </button>
         </div>
 
@@ -245,7 +247,7 @@ export default function CreateSplitPage() {
           onClick={handleCreate}
           className="w-full py-4 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-base font-medium transition-colors"
         >
-          Create Split
+          {t.createSplit}
         </button>
       </div>
     </div>

@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Loader2, Mail } from 'lucide-react';
+import { useT } from '../hooks/useT';
 
 export default function ForgotPassword() {
   const { sendPasswordReset } = useAuthStore();
+  const t = useT();
   const [email, setEmail]   = useState('');
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function ForgotPassword() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">PPL/UL</h1>
-          <p className="text-[#737373] text-sm mt-2">Reset your password</p>
+          <p className="text-[#737373] text-sm mt-2">{t.resetYourPassword}</p>
         </div>
 
         {sent ? (
@@ -37,20 +39,20 @@ export default function ForgotPassword() {
               <Mail size={28} className="text-[#fafafa]" />
             </div>
             <div>
-              <p className="text-[#fafafa] font-semibold">Check your email</p>
+              <p className="text-[#fafafa] font-semibold">{t.checkYourEmail}</p>
               <p className="text-[#737373] text-sm mt-1">
-                We sent a password reset link to<br />
+                {t.weSentResetLink}<br />
                 <span className="text-[#fafafa] font-medium">{email}</span>
               </p>
             </div>
             <p className="text-xs text-[#525252]">
-              Click the link in the email to set a new password. The link expires in 1 hour.
+              {t.resetLinkExpires}
             </p>
             <Link
               to="/login"
               className="block w-full py-3 rounded-full bg-[#262626] border border-[#404040] text-[#fafafa] text-sm font-medium text-center hover:bg-[#2e2e2e] transition-colors"
             >
-              Back to Sign In
+              {t.backToSignIn}
             </Link>
           </div>
         ) : (
@@ -62,13 +64,13 @@ export default function ForgotPassword() {
             )}
 
             <div>
-              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Email</label>
+              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">{t.email}</label>
               <input
                 autoFocus
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="Your account email"
+                placeholder={t.yourAccountEmail}
                 className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
               />
             </div>
@@ -79,12 +81,12 @@ export default function ForgotPassword() {
               className="w-full py-3 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-sm font-medium transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              Send Reset Link
+              {t.sendResetLink}
             </button>
 
             <p className="text-center text-sm text-[#737373]">
               <Link to="/login" className="text-[#fafafa] hover:text-white transition-colors font-medium">
-                Back to Sign In
+                {t.backToSignIn}
               </Link>
             </p>
           </form>

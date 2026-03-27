@@ -7,6 +7,7 @@ import {
 import { Trophy, TrendingUp, Dumbbell, Calendar, ChevronLeft, Download } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
+import { useT } from '../hooks/useT';
 
 const SESSION_COLORS = ['#e5e5e5', '#a3a3a3', '#737373', '#d4d4d4', '#525252', '#b0b0b0', '#909090'];
 
@@ -15,6 +16,7 @@ function formatDate(iso: string) {
 }
 
 export default function Dashboard() {
+  const t = useT();
   const navigate = useNavigate();
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
@@ -113,12 +115,12 @@ export default function Dashboard() {
           <ChevronLeft size={16} className="text-[#fafafa]" />
         </button>
         <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
-          STATS
+          {t.stats}
         </h1>
         <button
           onClick={handleExport}
           className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
-          title="Export to CSV"
+          title={t.exportToCsv}
         >
           <Download size={16} className="text-[#fafafa]" />
         </button>
@@ -128,10 +130,10 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Total Sessions', value: totalSessions, icon: Calendar },
-            { label: 'This Week', value: thisWeek, icon: TrendingUp },
-            { label: 'Exercises', value: exercises.length, icon: Dumbbell },
-            { label: 'Personal Records', value: userPRs.length, icon: Trophy },
+            { label: t.totalSessions, value: totalSessions, icon: Calendar },
+            { label: t.thisWeek, value: thisWeek, icon: TrendingUp },
+            { label: t.exercisesLabel, value: exercises.length, icon: Dumbbell },
+            { label: t.personalRecords, value: userPRs.length, icon: Trophy },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="bg-[#262626] rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
@@ -145,7 +147,7 @@ export default function Dashboard() {
 
         {/* Quick navigate */}
         <div>
-          <h2 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">Training Days</h2>
+          <h2 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">{t.trainingDaysLabel}</h2>
           <div className="grid grid-cols-5 gap-2">
             {trainingDays.map(d => {
               const count = userSets.filter(ws => ws.dayType === d.type).length;
@@ -167,7 +169,7 @@ export default function Dashboard() {
         {/* Charts */}
         <div className="space-y-4">
           <div className="bg-[#262626] rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">Sessions by Day Type</h3>
+            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">{t.sessionsByDayType}</h3>
             {byDay.some(d => d.sessions > 0) ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={byDay} barSize={28}>
@@ -184,13 +186,13 @@ export default function Dashboard() {
               </ResponsiveContainer>
             ) : (
               <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
-                Log workouts to see data
+                {t.logWorkoutsToSeeData}
               </div>
             )}
           </div>
 
           <div className="bg-[#262626] rounded-2xl p-5">
-            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">Volume (last 30 days)</h3>
+            <h3 className="text-sm font-semibold text-[#fafafa] mb-4">{t.volumeLast30Days}</h3>
             {last30.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={last30}>
@@ -213,7 +215,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             ) : (
               <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
-                Log workouts to see data
+                {t.logWorkoutsToSeeData}
               </div>
             )}
           </div>
@@ -222,13 +224,13 @@ export default function Dashboard() {
         {/* Exercise progress */}
         <div className="bg-[#262626] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[#fafafa]">Exercise Progress</h3>
+            <h3 className="text-sm font-semibold text-[#fafafa]">{t.exerciseProgress}</h3>
             <select
               value={selectedExercise}
               onChange={e => setSelectedExercise(e.target.value)}
               className="bg-[#171717] border border-[#404040] rounded-lg px-3 py-1.5 text-sm text-[#fafafa] focus:outline-none focus:border-[#737373] transition-colors"
             >
-              <option value="">Select exercise...</option>
+              <option value="">{t.selectExercise}</option>
               {exerciseOptions.map(e => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
@@ -243,17 +245,17 @@ export default function Dashboard() {
                 <YAxis tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip {...tooltipStyle} />
                 <Legend wrapperStyle={{ paddingTop: 16, color: '#a3a3a3' }} />
-                <Line type="monotone" dataKey="maxWeight" name="Max Weight (kg)" stroke="#e5e5e5" strokeWidth={2} dot={{ fill: '#e5e5e5', r: 3 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="sets" name="Sets" stroke="#737373" strokeWidth={2} dot={{ fill: '#737373', r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="maxWeight" name={`${t.maxWeight} (kg)`} stroke="#e5e5e5" strokeWidth={2} dot={{ fill: '#e5e5e5', r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="sets" name={t.sets} stroke="#737373" strokeWidth={2} dot={{ fill: '#737373', r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           ) : selectedExercise ? (
             <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
-              Need at least 2 sessions to show progress
+              {t.need2Sessions}
             </div>
           ) : (
             <div className="h-48 flex items-center justify-center text-[#737373] text-sm">
-              Select an exercise to view progress
+              {t.selectExerciseToView}
             </div>
           )}
         </div>
@@ -262,7 +264,7 @@ export default function Dashboard() {
         {userPRs.length > 0 && (
           <div className="bg-[#262626] rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-[#fafafa] mb-4 flex items-center gap-2">
-              <Trophy size={14} className="text-yellow-400" /> Personal Records
+              <Trophy size={14} className="text-yellow-400" /> {t.personalRecords}
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {userPRs.map(pr => {

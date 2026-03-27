@@ -2,17 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Check, Loader2 } from 'lucide-react';
+import { useT } from '../hooks/useT';
 
-const RULES = [
-  { id: 'len',     label: 'At least 8 characters',   test: (p: string) => p.length >= 8 },
-  { id: 'upper',   label: 'One uppercase letter',     test: (p: string) => /[A-Z]/.test(p) },
-  { id: 'number',  label: 'One number',               test: (p: string) => /[0-9]/.test(p) },
-  { id: 'special', label: 'One special character',    test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+const RULE_TESTS = [
+  { id: 'len',     test: (p: string) => p.length >= 8 },
+  { id: 'upper',   test: (p: string) => /[A-Z]/.test(p) },
+  { id: 'number',  test: (p: string) => /[0-9]/.test(p) },
+  { id: 'special', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
 ];
 
 export default function ResetPassword() {
   const navigate = useNavigate();
   const { updatePassword } = useAuthStore();
+  const t = useT();
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
@@ -20,7 +22,14 @@ export default function ResetPassword() {
   const [loading, setLoading]   = useState(false);
   const [done, setDone]         = useState(false);
 
-  const allRulesPassed = RULES.every(r => r.test(password));
+  const rules = [
+    { id: 'len',     label: t.atLeast8Chars, test: (p: string) => p.length >= 8 },
+    { id: 'upper',   label: t.oneUppercase,  test: (p: string) => /[A-Z]/.test(p) },
+    { id: 'number',  label: t.oneNumber,     test: (p: string) => /[0-9]/.test(p) },
+    { id: 'special', label: t.oneSpecial,    test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+  ];
+
+  const allRulesPassed = RULE_TESTS.every(r => r.test(password));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +51,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">PPL/UL</h1>
-          <p className="text-[#737373] text-sm mt-2">Set a new password</p>
+          <p className="text-[#737373] text-sm mt-2">{t.setNewPassword}</p>
         </div>
 
         {done ? (
@@ -50,8 +59,8 @@ export default function ResetPassword() {
             <div className="w-16 h-16 rounded-full bg-green-400/10 border border-green-400/30 flex items-center justify-center mx-auto">
               <Check size={28} className="text-green-400" strokeWidth={2.5} />
             </div>
-            <p className="text-[#fafafa] font-semibold">Password updated!</p>
-            <p className="text-[#737373] text-sm">Taking you to the app…</p>
+            <p className="text-[#fafafa] font-semibold">{t.passwordUpdated}</p>
+            <p className="text-[#737373] text-sm">{t.takingYouToApp}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,18 +71,18 @@ export default function ResetPassword() {
             )}
 
             <div>
-              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">New Password</label>
+              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">{t.newPassword}</label>
               <input
                 autoFocus
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Create a strong password"
+                placeholder={t.passwordPlaceholder}
                 className="mt-1.5 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
               />
               {password && (
                 <div className="mt-2 space-y-1">
-                  {RULES.map(rule => {
+                  {rules.map(rule => {
                     const ok = rule.test(password);
                     return (
                       <div key={rule.id} className={`flex items-center gap-2 text-xs ${ok ? 'text-green-400' : 'text-[#525252]'}`}>
@@ -89,18 +98,18 @@ export default function ResetPassword() {
             </div>
 
             <div>
-              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">Confirm New Password</label>
+              <label className="text-xs text-[#737373] uppercase tracking-wider font-medium">{t.confirmNewPassword}</label>
               <input
                 type="password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
-                placeholder="Repeat your password"
+                placeholder={t.repeatPasswordPlaceholder}
                 className={`mt-1.5 w-full bg-[#262626] border rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none transition-colors ${
                   confirm && confirm !== password ? 'border-red-800 focus:border-red-600' : 'border-[#404040] focus:border-[#737373]'
                 }`}
               />
               {confirm && confirm !== password && (
-                <p className="text-xs text-red-400 mt-1">Passwords don't match</p>
+                <p className="text-xs text-red-400 mt-1">{t.passwordsDontMatch}</p>
               )}
             </div>
 
@@ -110,7 +119,7 @@ export default function ResetPassword() {
               className="w-full py-3 rounded-full bg-[#f5f5f5] hover:bg-white text-[#0a0a0a] text-sm font-medium transition-colors mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-              Update Password
+              {t.updatePassword}
             </button>
           </form>
         )}

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trophy, ChevronLeft, Clock, Link2, X, GripVertical, CheckCircle2 } from 'lucide-react';
 import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Exercise, Superset } from '../types';
@@ -60,6 +61,7 @@ export default function TrainingDay() {
   const workoutSets   = useWorkoutStore(s => s.workoutSets);
   const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset } = useWorkoutStore();
   const { currentUser } = useAuthStore();
+  const t = useT();
 
   // Modal state
   const [logState,       setLogState]      = useState<{ exerciseId: string; supersetId?: string } | null>(null);
@@ -241,7 +243,7 @@ export default function TrainingDay() {
               <span className="text-xs text-[#525252]">{totalSets} sets · {maxWeight}kg</span>
             </div>
           ) : (
-            <p className="text-xs text-[#525252] mt-1">Tap to log sets</p>
+            <p className="text-xs text-[#525252] mt-1">{t.tapToLogSets}</p>
           )}
         </div>
 
@@ -292,7 +294,7 @@ export default function TrainingDay() {
         )}
         {completedToday > 0 && (
           <p className="text-center text-xs text-[#0d9488] mt-2">
-            {completedToday}/{dayExercises.length} done today
+            {completedToday}/{dayExercises.length} {t.doneToday}
           </p>
         )}
       </div>
@@ -315,22 +317,22 @@ export default function TrainingDay() {
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-white/5 border border-[#404040] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
           >
             <Plus size={15} />
-            New exercise
+            {t.newExercise}
           </button>
           <button
             onClick={() => setShowSuperset(true)}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-white/5 border border-[#404040] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
           >
             <Link2 size={15} />
-            Add superset
+            {t.addSuperset}
           </button>
         </div>
 
         {/* Exercise cards */}
         {baseItems.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-[#737373] font-medium">No exercises yet.</p>
-            <p className="text-[#525252] text-sm mt-1">Tap "New exercise" above to get started.</p>
+            <p className="text-[#737373] font-medium">{t.noExercisesYet}</p>
+            <p className="text-[#525252] text-sm mt-1">{t.noExercisesTip}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -366,7 +368,7 @@ export default function TrainingDay() {
                           onClick={() => setLogSuperset(item.superset)}
                         >
                           <Link2 size={12} className="text-[#fd9a00]" />
-                          <span className="text-[10px] font-bold text-[#fd9a00] uppercase tracking-[2px]">Superset</span>
+                          <span className="text-[10px] font-bold text-[#fd9a00] uppercase tracking-[2px]">{t.superset}</span>
                         </button>
                         <button
                           onClick={() => removeSuperset(dayType, item.superset.id)}
@@ -408,7 +410,7 @@ export default function TrainingDay() {
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-base active:scale-[0.98] hover:bg-white transition-colors"
         >
           <CheckCircle2 size={18} className="text-[#0a0a0a]" />
-          Finish session
+          {t.finishSession}
         </button>
       </div>
 
@@ -417,24 +419,24 @@ export default function TrainingDay() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-end">
           <div className="w-full bg-[#1c1c1c] rounded-t-3xl p-6 pb-10 space-y-4">
             <h2 className="text-xl font-semibold text-[#fafafa] text-center">
-              Wrap up {trainingDay?.label ?? dayType}?
+              {t.wrapUp} {trainingDay?.label ?? dayType}?
             </h2>
             <p className="text-sm text-[#737373] text-center">
               {completedToday > 0
-                ? `${completedToday}/${dayExercises.length} exercises logged today`
-                : 'No exercises logged yet'}
+                ? `${completedToday}/${dayExercises.length} ${t.exercisesLoggedToday}`
+                : t.noExercisesLogged}
             </p>
             <button
               onClick={handleFinish}
               className="w-full py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-sm active:scale-[0.98]"
             >
-              Finish session
+              {t.finishSession}
             </button>
             <button
               onClick={() => setShowFinishConf(false)}
               className="w-full py-3 rounded-full bg-[#262626] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
             >
-              Keep going
+              {t.keepGoing}
             </button>
           </div>
         </div>

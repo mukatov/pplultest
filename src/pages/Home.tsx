@@ -4,13 +4,14 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
-const MENU_ITEMS = [
-  { label: 'Dashboard', icon: BarChart2, path: '/dashboard' },
-  { label: 'Settings',  icon: Settings,  path: '/settings'  },
-  { label: 'Profile',   icon: User,      path: '/profile'   },
+const MENU_PATHS = [
+  { key: 'dashboard' as const, icon: BarChart2, path: '/dashboard' },
+  { key: 'settings'  as const, icon: Settings,  path: '/settings'  },
+  { key: 'profile'   as const, icon: User,      path: '/profile'   },
 ];
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { currentUser, logout } = useAuthStore();
+  const t = useT();
 
   const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
   const days = activeSplit?.days ?? [];
@@ -102,7 +104,7 @@ export default function Home() {
       {/* Center content */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8">
         <p className="text-lg font-semibold text-[#fafafa] text-center px-4">
-          What workout are we doing today?
+          {t.whatWorkout}
         </p>
 
         {/* Carousel — fixed height prevents text above/below from jumping */}
@@ -144,7 +146,7 @@ export default function Home() {
                     {day.label.toUpperCase()}
                   </span>
                   <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#a3a3a3]'}`}>
-                    {count} exercises
+                    {count} {t.exercises}
                   </span>
                 </button>
               );
@@ -163,7 +165,7 @@ export default function Home() {
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-medium text-base transition-all active:scale-[0.98] hover:bg-white"
         >
           <Play size={16} className="fill-[#0a0a0a]" />
-          Start workout
+          {t.startWorkout}
         </button>
       </div>
 
@@ -173,7 +175,7 @@ export default function Home() {
           <div className="bg-[#1c1c1c] border border-[#4ade80]/30 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#4ade80] truncate">
-                {toast.label} session complete 🎉
+                {toast.label} {t.sessionComplete}
               </p>
               <div className="flex items-center gap-1 mt-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -190,7 +192,7 @@ export default function Home() {
               onClick={handleUndo}
               className="flex-shrink-0 px-3 py-1.5 rounded-full bg-[#262626] text-[#fafafa] text-xs font-medium border border-[#404040] active:scale-[0.96]"
             >
-              Undo
+              {t.undo}
             </button>
           </div>
         </div>
@@ -214,20 +216,20 @@ export default function Home() {
               <div className="min-w-0">
                 <p className="text-[#fafafa] font-semibold text-sm truncate">{currentUser.email}</p>
                 <p className="text-[#525252] text-xs">
-                  Since {new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  {t.since} {new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              {MENU_ITEMS.map(({ label, icon: Icon, path }) => (
+              {MENU_PATHS.map(({ key, icon: Icon, path }) => (
                 <button
-                  key={label}
+                  key={key}
                   onClick={() => { navigate(path); setMenuOpen(false); }}
                   className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-[#262626] text-[#fafafa] font-medium text-sm active:bg-[#2e2e2e] transition-colors"
                 >
                   <Icon size={18} className="text-[#737373]" />
-                  {label}
+                  {t[key]}
                 </button>
               ))}
 
@@ -236,7 +238,7 @@ export default function Home() {
                 className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-[#262626] text-red-400 font-medium text-sm active:bg-[#2e2e2e] transition-colors"
               >
                 <LogOut size={18} className="text-red-400" />
-                Log out
+                {t.logOut}
               </button>
             </div>
           </div>
