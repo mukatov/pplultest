@@ -75,7 +75,8 @@ export default function TrainingDay() {
   const [dragDeltaY, setDragDeltaY] = useState(0);
   const itemRefs  = useRef<(HTMLDivElement | null)[]>([]);
   const rectsRef  = useRef<DOMRect[]>([]);
-  const startYRef = useRef(0);
+  const startYRef      = useRef(0);
+  const scrollHapticRef = useRef(0);
 
   const activeSplit  = splits.find(s => s.id === activeSplitId);
   const trainingDay  = activeSplit?.days?.find(d => d.type === dayType);
@@ -297,7 +298,16 @@ export default function TrainingDay() {
       </div>
 
       {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain"
+        onScroll={(e) => {
+          const y = e.currentTarget.scrollTop;
+          if (Math.abs(y - scrollHapticRef.current) >= 80) {
+            scrollHapticRef.current = y;
+            triggerHaptic(5);
+          }
+        }}
+      >
         {/* Action buttons — TOP of list */}
         <div className="flex gap-2 mb-3">
           <button

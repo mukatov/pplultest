@@ -60,6 +60,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   // exerciseId → all sets logged so far this session
   const [completed, setCompleted]   = useState<Record<string, SetEntry[]>>({});
   const [saved, setSaved]           = useState(false);
+  const scrollHapticRef = useRef(0);
 
   const exObjects = superset.exerciseIds.map(id => exercises.find(e => e.id === id)).filter(Boolean);
   const currentEx = exObjects[currentIdx];
@@ -138,7 +139,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         {exObjects.map((ex, idx) => (
           <div key={ex?.id ?? idx} className="flex items-center">
             <button
-              onClick={() => setCurrentIdx(idx)}
+              onClick={() => { triggerHaptic(10); setCurrentIdx(idx); }}
               className="flex flex-col items-center gap-1"
             >
               <div className={`w-2.5 h-2.5 rounded-full transition-all ${
@@ -170,9 +171,28 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         ))}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-4">
-        {/* Sets logged this session for current exercise */}
+      {/* Inputs pinned below header */}
+      <div className="flex-shrink-0 px-4 pt-2 pb-4 flex flex-col gap-3">
+        <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
+          SET {currentSets.length + 1}
+        </p>
+        <div className="flex gap-2.5">
+          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
+          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
+        </div>
+      </div>
+
+      {/* Scrollable: sets logged this session */}
+      <div
+        className="flex-1 overflow-y-auto min-h-0 px-4 pb-3 overscroll-contain"
+        onScroll={(e) => {
+          const y = e.currentTarget.scrollTop;
+          if (Math.abs(y - scrollHapticRef.current) >= 80) {
+            scrollHapticRef.current = y;
+            triggerHaptic(5);
+          }
+        }}
+      >
         {currentSets.length > 0 && (
           <div className="bg-[#262626] rounded-2xl p-3">
             <p className="text-[10px] text-[#525252] uppercase tracking-[1.5px] mb-2 text-center">
@@ -188,17 +208,6 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
             </div>
           </div>
         )}
-
-        {/* Set label */}
-        <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
-          SET {currentSets.length + 1}
-        </p>
-
-        {/* Steppers */}
-        <div className="flex gap-2.5">
-          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
-          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
-        </div>
       </div>
 
       {/* Bottom actions */}

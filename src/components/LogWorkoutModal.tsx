@@ -346,6 +346,15 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
     URL.revokeObjectURL(url);
   };
 
+  const scrollHapticRef = useRef(0);
+  const handleScrollHaptic = (e: React.UIEvent<HTMLDivElement>) => {
+    const y = e.currentTarget.scrollTop;
+    if (Math.abs(y - scrollHapticRef.current) >= 80) {
+      scrollHapticRef.current = y;
+      triggerHaptic(5);
+    }
+  };
+
   const handleSave = () => {
     if (!currentUser || completedSets.length === 0) return;
     // Replace today's partial session so history only ever has one entry per day
@@ -408,89 +417,100 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
         )}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
-        {mode === 'session' ? (
-          <>
-            <SetGrid sets={completedSets} highlightMax onRemove={handleRemoveSet} />
-            <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">SET {completedSets.length + 1}</p>
+      {/* Session mode: inputs pinned, sets scroll below */}
+      {mode === 'session' ? (
+        <>
+          <div className="flex-shrink-0 px-4 pt-3 pb-4 flex flex-col gap-3">
+            <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
+              SET {completedSets.length + 1}
+            </p>
             <div className="flex gap-2.5">
               <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
               <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {/* Chart card */}
-            <div className="bg-[#262626] border border-[#404040] rounded-xl p-3 flex flex-col gap-3">
-              {/* Dropdown row + selected value */}
-              <div className="flex items-start justify-between">
-                <TrendDropdown value={chartMetric} onChange={setChartMetric} />
-                <div className="text-right">
-                  {displayValue !== null ? (
-                    <>
-                      <div className="flex items-end gap-1 justify-end">
-                        <span className="text-[30px] font-semibold text-[#fafafa] leading-none tracking-[-1px]">{displayValue}</span>
-                        <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">{METRIC_UNIT[chartMetric]}</span>
-                      </div>
-                      {displayDate && (
-                        <p className="text-[10px] text-[#525252] mt-0.5">{displayDate}</p>
-                      )}
-                    </>
-                  ) : null}
-                </div>
-              </div>
-              {/* Chart */}
-              <div className="h-[165px]">
-                <LineChart
-                  data={chartData}
-                  selectedIndex={effectiveIdx ?? -1}
-                  onSelect={i => setSelectedPtIdx(i)}
-                />
-              </div>
-            </div>
-
-            {/* Time range bar */}
-            <div className="flex rounded-lg overflow-hidden border border-[#404040]">
-              {TIME_RANGES.map((r, i) => (
-                <button key={r.value} onClick={() => { setTimeRange(r.value); setSelectedPtIdx(null); }}
-                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                    timeRange === r.value ? 'bg-[rgba(255,255,255,0.15)] text-[#fafafa]' : 'text-[#737373]'
-                  } ${i > 0 ? 'border-l border-[#404040]' : ''}`}>
-                  {r.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Session history list (lazy loaded) */}
-            {historyDesc.slice(0, visibleCount).map(ws => {
-              const dateStr = new Date(ws.date).toLocaleDateString('en-GB', {
-                weekday: 'long', day: 'numeric', month: 'long',
-              }).toUpperCase();
-              return (
-                <div key={ws.id} className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-center gap-2">
-                    <p className="text-center text-sm text-[#fafafa] uppercase tracking-[1.5px]">{dateStr}</p>
-                    {ws.supersetId && <Link2 size={11} className="text-[#fd9a00] flex-shrink-0" />}
-                  </div>
-                  <SetGrid sets={ws.sets} highlightMax />
-                </div>
-              );
-            })}
-
-            {/* Sentinel for intersection observer / lazy loading */}
-            {visibleCount < historyDesc.length && (
-              <div ref={sentinelRef} className="py-4 flex justify-center">
-                <div className="w-5 h-5 rounded-full border-2 border-[#404040] border-t-[#737373] animate-spin" />
-              </div>
-            )}
-
-            {history.length === 0 && (
-              <p className="text-center text-[#737373] text-sm mt-4">No history yet</p>
-            )}
           </div>
-        )}
-      </div>
+          <div
+            className="flex-1 overflow-y-auto min-h-0 px-4 pb-3 overscroll-contain"
+            onScroll={handleScrollHaptic}
+          >
+            <SetGrid sets={completedSets} highlightMax onRemove={handleRemoveSet} />
+          </div>
+        </>
+      ) : (
+        /* History mode: full scrollable area */
+        <div
+          className="flex-1 overflow-y-auto min-h-0 px-4 py-3 flex flex-col gap-3 overscroll-contain"
+          onScroll={handleScrollHaptic}
+        >
+          {/* Chart card */}
+          <div className="bg-[#262626] border border-[#404040] rounded-xl p-3 flex flex-col gap-3">
+            {/* Dropdown row + selected value */}
+            <div className="flex items-start justify-between">
+              <TrendDropdown value={chartMetric} onChange={setChartMetric} />
+              <div className="text-right">
+                {displayValue !== null ? (
+                  <>
+                    <div className="flex items-end gap-1 justify-end">
+                      <span className="text-[30px] font-semibold text-[#fafafa] leading-none tracking-[-1px]">{displayValue}</span>
+                      <span className="text-xs text-[#a3a3a3] uppercase tracking-[1.5px] mb-0.5">{METRIC_UNIT[chartMetric]}</span>
+                    </div>
+                    {displayDate && (
+                      <p className="text-[10px] text-[#525252] mt-0.5">{displayDate}</p>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            </div>
+            {/* Chart */}
+            <div className="h-[165px]">
+              <LineChart
+                data={chartData}
+                selectedIndex={effectiveIdx ?? -1}
+                onSelect={i => setSelectedPtIdx(i)}
+              />
+            </div>
+          </div>
+
+          {/* Time range bar */}
+          <div className="flex rounded-lg overflow-hidden border border-[#404040]">
+            {TIME_RANGES.map((r, i) => (
+              <button key={r.value} onClick={() => { setTimeRange(r.value); setSelectedPtIdx(null); }}
+                className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                  timeRange === r.value ? 'bg-[rgba(255,255,255,0.15)] text-[#fafafa]' : 'text-[#737373]'
+                } ${i > 0 ? 'border-l border-[#404040]' : ''}`}>
+                {r.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Session history list (lazy loaded) */}
+          {historyDesc.slice(0, visibleCount).map(ws => {
+            const dateStr = new Date(ws.date).toLocaleDateString('en-GB', {
+              weekday: 'long', day: 'numeric', month: 'long',
+            }).toUpperCase();
+            return (
+              <div key={ws.id} className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-center text-sm text-[#fafafa] uppercase tracking-[1.5px]">{dateStr}</p>
+                  {ws.supersetId && <Link2 size={11} className="text-[#fd9a00] flex-shrink-0" />}
+                </div>
+                <SetGrid sets={ws.sets} highlightMax />
+              </div>
+            );
+          })}
+
+          {/* Sentinel for intersection observer / lazy loading */}
+          {visibleCount < historyDesc.length && (
+            <div ref={sentinelRef} className="py-4 flex justify-center">
+              <div className="w-5 h-5 rounded-full border-2 border-[#404040] border-t-[#737373] animate-spin" />
+            </div>
+          )}
+
+          {history.length === 0 && (
+            <p className="text-center text-[#737373] text-sm mt-4">No history yet</p>
+          )}
+        </div>
+      )}
 
       {/* Bottom action bar */}
       <div className="px-4 py-3 pb-8 flex gap-2 flex-shrink-0 backdrop-blur-sm bg-[rgba(23,23,23,0.8)]">
