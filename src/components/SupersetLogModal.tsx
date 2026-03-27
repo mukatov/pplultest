@@ -4,7 +4,7 @@ import { triggerHaptic } from '../utils/haptic';
 import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { Superset, DayType, SetEntry } from '../types';
+import { Superset, DayType, SetEntry, weightStep } from '../types';
 
 // ─── Stepper ────────────────────────────────────────────────────────────────────
 function Stepper({ value, onChange, step, min, label, unit, className }: {
@@ -179,7 +179,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
           {t.set.toUpperCase()} {currentSets.length + 1}
         </p>
         <div className="flex gap-2.5">
-          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
+          <Stepper value={weight} onChange={setWeight} step={weightStep(currentEx?.equipment)} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
           <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label={t.reps}             className="flex-[2]" />
         </div>
       </div>

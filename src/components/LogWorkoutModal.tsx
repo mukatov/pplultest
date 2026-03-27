@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Settings, ChevronRight, Check, X, ChevronDown, Link2, Download } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { DayType, SetEntry, WorkoutSet } from '../types';
+import { DayType, SetEntry, WorkoutSet, weightStep } from '../types';
 import { triggerHaptic } from '../utils/haptic';
 import { useT } from '../hooks/useT';
 import type { T } from '../lib/i18n';
@@ -244,9 +244,14 @@ function Stepper({ value, onChange, step, min, label, unit, className }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, supersetId, onClose }: Props) {
-  const { logWorkout, removeWorkout, getWorkoutHistory } = useWorkoutStore();
+  const { exercises, logWorkout, removeWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
   const t = useT();
+
+  // exerciseId is prefixed with userId, strip it to look up the exercise definition
+  const bareId   = exerciseId.includes(':') ? exerciseId.split(':').slice(1).join(':') : exerciseId;
+  const exercise = exercises.find(e => e.id === bareId);
+  const wStep    = weightStep(exercise?.equipment);
 
   const allHistory  = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
   const todayStr    = new Date().toDateString();
@@ -426,7 +431,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
               {t.set.toUpperCase()} {completedSets.length + 1}
             </p>
             <div className="flex gap-2.5">
-              <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
+              <Stepper value={weight} onChange={setWeight} step={wStep} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
               <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label={t.reps}             className="flex-[2]" />
             </div>
           </div>

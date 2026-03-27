@@ -1,4 +1,5 @@
 export type DayType = string;
+export type Equipment = 'barbell' | 'dumbbell' | 'cable' | 'machine' | 'bodyweight';
 
 // User type is defined in authStore.ts (Supabase-backed)
 // Re-exported here for convenience
@@ -9,7 +10,19 @@ export interface Exercise {
   name: string;
   muscleGroups: string[];
   suggestedDays: DayType[];
+  equipment?: Equipment;
   notes?: string;
+}
+
+/** Weight increment step in kg based on equipment type */
+export function weightStep(equipment?: Equipment): number {
+  switch (equipment) {
+    case 'dumbbell':   return 2;
+    case 'machine':    return 5;
+    case 'cable':      return 2.5;
+    case 'bodyweight': return 1;
+    default:           return 2.5; // barbell
+  }
 }
 
 export interface SetEntry {

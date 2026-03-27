@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, Sparkles, ChevronDown } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
-import { DayType, Exercise } from '../types';
+import { DayType, Exercise, Equipment } from '../types';
 import { suggestDays, DEFAULT_EXERCISES } from '../data/exercises';
 import { useT } from '../hooks/useT';
 
@@ -42,6 +42,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
   const [name, setName] = useState('');
   const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayType[]>([dayType]);
+  const [equipment, setEquipment] = useState<Equipment>('barbell');
   const [suggested, setSuggested] = useState<DayType[]>([]);
   const [search, setSearch] = useState('');
   const [muscleFilter, setMuscleFilter] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
       name: name.trim(),
       muscleGroups: selectedMuscles,
       suggestedDays: selectedDays,
+      equipment,
     };
     addExercise(exercise);
     onAdd(exercise);
@@ -248,6 +250,31 @@ export default function AddExerciseModal({ dayType, onClose, onAdd }: Props) {
                 placeholder={t.exerciseNamePlaceholder}
                 className="mt-2 w-full bg-[#262626] border border-[#404040] rounded-xl px-4 py-3 text-sm text-[#fafafa] placeholder-[#525252] focus:outline-none focus:border-[#737373] transition-colors"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-3 block">{t.equipmentType}</label>
+              <div className="flex gap-2 flex-wrap">
+                {([
+                  { value: 'barbell',    label: t.eqBarbell    },
+                  { value: 'dumbbell',   label: t.eqDumbbell   },
+                  { value: 'cable',      label: t.eqCable      },
+                  { value: 'machine',    label: t.eqMachine    },
+                  { value: 'bodyweight', label: t.eqBodyweight },
+                ] as { value: Equipment; label: string }[]).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setEquipment(value)}
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                      equipment === value
+                        ? 'bg-[#f5f5f5] border-[#f5f5f5] text-[#0a0a0a]'
+                        : 'bg-[#262626] border-[#404040] text-[#737373] hover:border-[#737373]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>

@@ -108,6 +108,12 @@ export const translations = {
     createAndAdd:         'Create & Add to Session',
     searchExercises:      'Search exercises...',
     noExercisesMatch:     'No exercises match',
+    equipmentType:        'Equipment',
+    eqBarbell:            'Barbell',
+    eqDumbbell:           'Dumbbell',
+    eqCable:              'Cable',
+    eqMachine:            'Machine',
+    eqBodyweight:         'Bodyweight',
 
     // EditDayModal
     exercisesSelected: 'exercises selected',
@@ -297,6 +303,12 @@ export const translations = {
     createAndAdd:         'Создать и добавить',
     searchExercises:      'Поиск упражнений...',
     noExercisesMatch:     'Нет совпадений',
+    equipmentType:        'Оборудование',
+    eqBarbell:            'Штанга',
+    eqDumbbell:           'Гантели',
+    eqCable:              'Кабельный тренажёр',
+    eqMachine:            'Тренажёр',
+    eqBodyweight:         'С весом тела',
 
     // EditDayModal
     exercisesSelected: 'упражнений выбрано',
