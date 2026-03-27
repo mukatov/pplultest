@@ -88,7 +88,9 @@ export default function TrainingDay() {
   function isLoggedToday(exerciseId: string): boolean {
     if (!currentUser) return false;
     const key = `${currentUser.id}:${exerciseId}`;
-    return workoutSets.some(ws => ws.exerciseId === key && new Date(ws.date).toDateString() === today);
+    return workoutSets.some(
+      ws => ws.exerciseId === key && ws.dayType === dayType && new Date(ws.date).toDateString() === today
+    );
   }
 
   function handleAddExercise(exercise: Exercise) {

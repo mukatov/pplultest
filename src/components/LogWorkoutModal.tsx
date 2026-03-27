@@ -250,7 +250,9 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   const allHistory  = currentUser ? getWorkoutHistory(exerciseId, currentUser.id) : [];
   const todayStr    = new Date().toDateString();
   // Session logged earlier today (kept in "current session", not yet in history)
-  const todaySession = [...allHistory].reverse().find(ws => new Date(ws.date).toDateString() === todayStr);
+  const todaySession = [...allHistory].reverse().find(
+    ws => new Date(ws.date).toDateString() === todayStr && ws.dayType === dayType
+  );
   // History excludes today — shown only after the session finishes
   const history     = allHistory.filter(ws => new Date(ws.date).toDateString() !== todayStr);
   const historyDesc = [...history].reverse();
