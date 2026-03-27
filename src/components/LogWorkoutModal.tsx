@@ -3,6 +3,7 @@ import { ChevronLeft, Settings, ChevronRight, Check, Minus, Plus, X, ChevronDown
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry, WorkoutSet } from '../types';
+import { triggerHaptic } from '../utils/haptic';
 
 interface Props {
   exerciseId: string;
@@ -204,40 +205,43 @@ function SetGrid({ sets, highlightMax, onRemove }: {
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
 
-function Stepper({ value, onChange, step, min, label, unit }: {
-  value: number; onChange: (v: number) => void; step: number; min: number; label: string; unit?: string;
+function Stepper({ value, onChange, step, min, label, unit, className }: {
+  value: number; onChange: (v: number) => void; step: number; min: number;
+  label: string; unit?: string; className?: string;
 }) {
-  const haptic = () => navigator.vibrate?.(8);
-  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); haptic(); };
-  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); haptic(); };
+  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); triggerHaptic(); };
+  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); triggerHaptic(); };
 
   const dragRef  = useRef<{ lastY: number } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
-  const onDown   = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     dragRef.current = { lastY: e.clientY };
     trackRef.current?.setPointerCapture(e.pointerId);
     setDragging(true);
   };
-  const onMove   = (e: React.PointerEvent) => {
+  const onMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
     const dy = dragRef.current.lastY - e.clientY;
     if (Math.abs(dy) >= 8) { if (dy > 0) inc(); else dec(); dragRef.current.lastY = e.clientY; }
   };
   const onUp = () => { dragRef.current = null; setDragging(false); };
 
+  // Weight (decimal step) needs wider number cell; reps (integer) needs narrower
+  const numWidthClass = step % 1 !== 0 ? 'w-[6ch]' : 'w-[4ch]';
+
   return (
-    <div className={`bg-[#262626] rounded-3xl flex-1 flex flex-col items-center gap-2 py-5 px-6 transition-colors ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
+    <div className={`bg-[#262626] rounded-3xl flex flex-col items-center gap-2 py-5 px-6 transition-colors ${className ?? 'flex-1'} ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
       <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{label}</p>
       <div ref={trackRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
         style={{ touchAction: 'none' }} className="flex items-center justify-between w-full cursor-ns-resize select-none">
         <button onClick={dec} className={`w-6 h-6 flex items-center justify-center rounded-[4px] transition-opacity ${value <= min ? 'opacity-30' : ''}`}>
           <Minus size={16} className="text-[#fafafa]" />
         </button>
-        <span className="text-5xl font-semibold text-[#fafafa] tracking-[-1.5px] min-w-[3rem] text-center leading-[48px]">{value}</span>
+        <span className={`text-5xl font-mono text-[#fafafa] text-center leading-[48px] shrink-0 ${numWidthClass}`}>{value}</span>
         <button onClick={inc} className="w-6 h-6 flex items-center justify-center rounded-[4px]">
           <Plus size={16} className="text-[#fafafa]" />
         </button>
@@ -418,8 +422,8 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
             <SetGrid sets={completedSets} highlightMax onRemove={handleRemoveSet} />
             <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">SET {completedSets.length + 1}</p>
             <div className="flex gap-2.5">
-              <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" />
-              <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS" />
+              <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
+              <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
             </div>
           </>
         ) : (

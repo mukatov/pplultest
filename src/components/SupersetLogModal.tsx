@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Minus, Plus, ChevronRight } from 'lucide-react';
+import { triggerHaptic } from '../utils/haptic';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Superset, DayType, SetEntry } from '../types';
 
-// ─── Stepper (same pattern as LogWorkoutModal) ─────────────────────────────────
-function Stepper({ value, onChange, step, min, label, unit }: {
-  value: number; onChange: (v: number) => void; step: number; min: number; label: string; unit?: string;
+// ─── Stepper ────────────────────────────────────────────────────────────────────
+function Stepper({ value, onChange, step, min, label, unit, className }: {
+  value: number; onChange: (v: number) => void; step: number; min: number;
+  label: string; unit?: string; className?: string;
 }) {
-  const haptic = () => navigator.vibrate?.(8);
-  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); haptic(); };
-  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); haptic(); };
+  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); triggerHaptic(); };
+  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); triggerHaptic(); };
 
   const dragRef  = useRef<{ lastY: number } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -30,15 +31,17 @@ function Stepper({ value, onChange, step, min, label, unit }: {
   };
   const onUp = () => { dragRef.current = null; setDragging(false); };
 
+  const numWidthClass = step % 1 !== 0 ? 'w-[6ch]' : 'w-[4ch]';
+
   return (
-    <div className={`bg-[#262626] rounded-3xl flex-1 flex flex-col items-center gap-2 py-5 px-6 transition-colors ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
+    <div className={`bg-[#262626] rounded-3xl flex flex-col items-center gap-2 py-5 px-6 transition-colors ${className ?? 'flex-1'} ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
       <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{label}</p>
       <div ref={trackRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
         style={{ touchAction: 'none' }} className="flex items-center justify-between w-full cursor-ns-resize select-none">
         <button onClick={dec} className={`w-6 h-6 flex items-center justify-center rounded-[4px] transition-opacity ${value <= min ? 'opacity-30' : ''}`}>
           <Minus size={16} className="text-[#fafafa]" />
         </button>
-        <span className="text-5xl font-semibold text-[#fafafa] tracking-[-1.5px] min-w-[3rem] text-center leading-[48px]">{value}</span>
+        <span className={`text-5xl font-mono text-[#fafafa] text-center leading-[48px] shrink-0 ${numWidthClass}`}>{value}</span>
         <button onClick={inc} className="w-6 h-6 flex items-center justify-center rounded-[4px]">
           <Plus size={16} className="text-[#fafafa]" />
         </button>
@@ -92,7 +95,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
 
   const handleLogAndAdvance = () => {
     if (!currentEx) return;
-    navigator.vibrate?.(12);
+    triggerHaptic(12);
     setCompleted(prev => ({
       ...prev,
       [currentEx.id]: [...(prev[currentEx.id] ?? []), { weight, reps }],
@@ -202,8 +205,8 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
 
         {/* Steppers */}
         <div className="flex gap-2.5">
-          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" />
-          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS" />
+          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" className="flex-[3]" />
+          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS"   className="flex-[2]" />
         </div>
       </div>
 
