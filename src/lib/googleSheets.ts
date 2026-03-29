@@ -4,7 +4,7 @@
 
 const CLIENT_ID    = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const SCOPES       = 'https://www.googleapis.com/auth/spreadsheets';
-const REDIRECT_URI = () => `${window.location.origin}/callback-popup.html`;
+const REDIRECT_URI = () => `${window.location.origin}${import.meta.env.BASE_URL}callback-popup.html`;
 const SHEETS_API   = 'https://sheets.googleapis.com/v4/spreadsheets';
 const TOKEN_URL    = 'https://oauth2.googleapis.com/token';
 
