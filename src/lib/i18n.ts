@@ -15,6 +15,7 @@ export const translations = {
     sessionComplete:   'session complete 🎉',
     undo:              'Undo',
     since:             'Since',
+    lastWorkout:       'last workout',
 
     // Settings
     splits:          'Splits',
@@ -218,6 +219,7 @@ export const translations = {
     sessionComplete:   'тренировка завершена 🎉',
     undo:              'Отменить',
     since:             'С',
+    lastWorkout:       'последняя',
 
     // Settings
     splits:          'Сплиты',

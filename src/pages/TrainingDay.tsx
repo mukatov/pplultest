@@ -59,7 +59,7 @@ export default function TrainingDay() {
   const splits        = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const workoutSets   = useWorkoutStore(s => s.workoutSets);
-  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset } = useWorkoutStore();
+  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset, markDayFinished } = useWorkoutStore();
   const { currentUser } = useAuthStore();
   const t = useT();
 
@@ -186,6 +186,7 @@ export default function TrainingDay() {
   // ─── Finish day ────────────────────────────────────────────────────────────
   const completedToday = dayExercises.filter(e => isLoggedToday(e.id)).length;
   const handleFinish = () => {
+    markDayFinished(dayType);
     navigate('/home', { state: { finishedDay: trainingDay?.label ?? dayType } });
   };
 

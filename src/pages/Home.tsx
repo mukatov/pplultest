@@ -15,32 +15,95 @@ const MENU_PATHS = [
 ];
 
 export default function Home() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const splits = useWorkoutStore(s => s.splits);
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const splits      = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
+  const workoutSets   = useWorkoutStore(s => s.workoutSets);
+  const finishedDays  = useWorkoutStore(s => s.finishedDays);
   const { currentUser, logout } = useAuthStore();
   const t = useT();
 
   const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
-  const days = activeSplit?.days ?? [];
+  const days        = activeSplit?.days ?? [];
 
-  const [selected, setSelected]   = useState<string>(days[0]?.type ?? '');
-  const [toast, setToast]         = useState<{ label: string; dayType: string } | null>(null);
+  // ─── Determine initial selected day ────────────────────────────────────────
+  // After a day is finished, start on the NEXT day in the split order.
+  function getInitialDay(): string {
+    if (days.length === 0) return '';
+    // Find the most recently finished day that exists in this split
+    let lastFinishedIdx = -1;
+    let mostRecentDate  = '';
+    for (const [dayType, dateStr] of Object.entries(finishedDays)) {
+      if (dateStr > mostRecentDate) {
+        const idx = days.findIndex(d => d.type === dayType);
+        if (idx !== -1) { lastFinishedIdx = idx; mostRecentDate = dateStr; }
+      }
+    }
+    if (lastFinishedIdx !== -1) {
+      return days[(lastFinishedIdx + 1) % days.length].type;
+    }
+    return days[0].type;
+  }
+
+  const [selected, setSelected]   = useState<string>(getInitialDay);
+  const [toast, setToast]         = useState<{ label: string } | null>(null);
   const [countdown, setCountdown] = useState(5);
   const [menuOpen, setMenuOpen]   = useState(false);
-  const cardRefs   = useRef<Record<string, HTMLButtonElement>>({});
-  const toastTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scrollRaf  = useRef<number | null>(null);
+  const cardRefs    = useRef<Record<string, HTMLButtonElement>>({});
+  const toastTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollRaf   = useRef<number | null>(null);
+  const didRedirect = useRef(false);
 
+  // ─── On mount: redirect to unfinished active workout ───────────────────────
+  useEffect(() => {
+    if (didRedirect.current || !currentUser) return;
+    didRedirect.current = true;
+    const today = new Date().toDateString();
+    // Find dayTypes that have sets logged today but are NOT marked finished today
+    const activeDayTypes = new Set(
+      workoutSets
+        .filter(ws =>
+          ws.exerciseId.startsWith(`${currentUser.id}:`) &&
+          new Date(ws.date).toDateString() === today
+        )
+        .map(ws => ws.dayType)
+    );
+    for (const dayType of activeDayTypes) {
+      if (finishedDays[dayType] !== today && days.some(d => d.type === dayType)) {
+        navigate(`/${dayType}`, { replace: true });
+        return;
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Scroll selected card into view on mount ───────────────────────────────
+  useEffect(() => {
+    if (!selected) return;
+    requestAnimationFrame(() => {
+      cardRefs.current[selected]?.scrollIntoView({
+        behavior: 'instant' as ScrollBehavior,
+        inline: 'center',
+        block: 'nearest',
+      });
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Finish toast from navigation state ────────────────────────────────────
   useEffect(() => {
     const state = location.state as { finishedDay?: string } | null;
     if (state?.finishedDay) {
-      setToast({ label: state.finishedDay, dayType: selected });
+      setToast({ label: state.finishedDay });
       setCountdown(5);
       window.history.replaceState({}, '');
+      // Also scroll to newly selected day (next after finished)
+      requestAnimationFrame(() => {
+        const newSelected = getInitialDay();
+        setSelected(newSelected);
+        cardRefs.current[newSelected]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
     }
-  }, [location.state]);
+  }, [location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!toast) return;
@@ -56,7 +119,23 @@ export default function Home() {
 
   if (!currentUser) return null;
 
-  const today = DAYS_OF_WEEK[new Date().getDay()];
+  // ─── Last workout date per day ─────────────────────────────────────────────
+  function lastWorkoutDate(dayType: string): string | null {
+    const entry = [...workoutSets]
+      .filter(ws => ws.exerciseId.startsWith(`${currentUser!.id}:`) && ws.dayType === dayType)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    if (!entry) return null;
+    return entry.date;
+  }
+
+  function daysAgoLabel(dateStr: string): string {
+    const d = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
+    if (d === 0) return t.today;
+    if (d === 1) return t.yesterday;
+    return t.dAgo(d);
+  }
+
+  const today       = DAYS_OF_WEEK[new Date().getDay()];
   const handleStart  = () => { triggerHaptic(12); navigate(`/${selected}`); };
   const handleLogout = async () => { await logout(); navigate('/login'); };
   const handleUndo   = () => {
@@ -107,21 +186,22 @@ export default function Home() {
           {t.whatWorkout}
         </p>
 
-        {/* Carousel — fixed height prevents text above/below from jumping */}
-        <div className="h-[212px] flex items-center w-full overflow-hidden">
+        {/* Carousel */}
+        <div className="h-[228px] flex items-center w-full overflow-hidden">
           <div
             className="flex items-center gap-3 overflow-x-auto w-full h-full py-2"
             style={{
               scrollbarWidth: 'none',
               scrollSnapType: 'x mandatory',
-              paddingLeft: 'calc(50vw - 100px)',
+              paddingLeft:  'calc(50vw - 100px)',
               paddingRight: 'calc(50vw - 100px)',
             }}
             onScroll={handleScroll}
           >
             {days.map(day => {
               const isSelected = selected === day.type;
-              const count = day.exerciseIds.length;
+              const count      = day.exerciseIds.length;
+              const lastDate   = lastWorkoutDate(day.type);
               return (
                 <button
                   key={day.type}
@@ -145,9 +225,14 @@ export default function Home() {
                   <span className={`font-semibold tracking-[-1px] ${isSelected ? 'text-3xl' : 'text-2xl'}`}>
                     {day.label.toUpperCase()}
                   </span>
-                  <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#a3a3a3]'}`}>
+                  <span className={`text-xs mt-1 ${isSelected ? 'text-[#737373]' : 'text-[#737373]'}`}>
                     {count} {t.exercises}
                   </span>
+                  {lastDate && (
+                    <span className="text-[10px] mt-1.5 text-[#525252] px-3 text-center leading-tight">
+                      {t.lastWorkout} · {daysAgoLabel(lastDate)}
+                    </span>
+                  )}
                 </button>
               );
             })}
