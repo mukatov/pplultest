@@ -2,7 +2,8 @@
 // Requires VITE_GOOGLE_CLIENT_ID in .env.local
 // Setup: Google Cloud Console → OAuth2 Web client → add <origin>/callback-popup.html as redirect URI
 
-const CLIENT_ID    = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '432754734536-bvvmjh2vobv0hg45rk0drbt06t3oa0fv.apps.googleusercontent.com';
+const CLIENT_ID     = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '432754734536-bvvmjh2vobv0hg45rk0drbt06t3oa0fv.apps.googleusercontent.com';
+const CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET ?? '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';
 const SCOPES       = 'https://www.googleapis.com/auth/spreadsheets';
 const REDIRECT_URI = () => `${window.location.origin}${import.meta.env.BASE_URL}callback-popup.html`;
 const SHEETS_API   = 'https://sheets.googleapis.com/v4/spreadsheets';
@@ -73,7 +74,8 @@ export async function startGoogleOAuth(): Promise<OAuthResult> {
           method:  'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body:    new URLSearchParams({
-            client_id:     CLIENT_ID!,
+            client_id:     CLIENT_ID,
+            client_secret: CLIENT_SECRET,
             code,
             code_verifier: verifier,
             grant_type:    'authorization_code',
@@ -107,7 +109,8 @@ export async function refreshAccessToken(refreshToken: string): Promise<{ access
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    new URLSearchParams({
-      client_id:     CLIENT_ID!,
+      client_id:     CLIENT_ID,
+      client_secret: CLIENT_SECRET,
       refresh_token: refreshToken,
       grant_type:    'refresh_token',
     }),
