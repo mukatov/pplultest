@@ -55,9 +55,12 @@ export default function Home() {
   const scrollRaf   = useRef<number | null>(null);
   const didRedirect = useRef(false);
 
-  // ─── On mount: redirect to unfinished active workout ───────────────────────
+  // ─── On mount: redirect to unfinished active workout (cold start only) ───────
   useEffect(() => {
-    if (didRedirect.current || !currentUser) return;
+    // Only redirect on cold start (history index 0 means the user typed the URL
+    // or refreshed — not navigated back from a training screen).
+    const isColdStart = (window.history.state?.idx ?? 0) === 0;
+    if (!isColdStart || didRedirect.current || !currentUser) return;
     didRedirect.current = true;
     const today = new Date().toDateString();
     // Find dayTypes that have sets logged today but are NOT marked finished today
