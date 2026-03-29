@@ -349,7 +349,18 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
     const nextSet = prevWorkout?.sets?.[setIndex];
     if (nextSet) { setWeight(nextSet.weight); setReps(nextSet.reps); }
   };
-  const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));
+  const handleRemoveSet = (i: number) => {
+    const newSets = completedSets.filter((_, j) => j !== i);
+    setComp(newSets);
+    // Auto-save deletion so swipe-back doesn't restore the deleted set
+    if (currentUser) {
+      if (todaySession) removeWorkout(todaySession.id);
+      if (newSets.length > 0) {
+        logWorkout(exerciseId, newSets, dayType, currentUser.id, supersetId);
+      }
+      // 0 sets → today's session is simply gone (removeWorkout above cleaned it up)
+    }
+  };
   const handleExportHistory = () => {
     const rows: string[][] = [['Date', 'Set', 'Weight (kg)', 'Reps', 'Volume (kg)']];
     for (const ws of historyDesc) {
@@ -378,10 +389,11 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   };
 
   const handleSave = () => {
-    if (!currentUser || completedSets.length === 0) return;
-    // Replace today's partial session so history only ever has one entry per day
+    if (!currentUser) return;
     if (todaySession) removeWorkout(todaySession.id);
-    logWorkout(exerciseId, completedSets, dayType, currentUser.id, supersetId);
+    if (completedSets.length > 0) {
+      logWorkout(exerciseId, completedSets, dayType, currentUser.id, supersetId);
+    }
     setSaved(true);
     setTimeout(onClose, 700);
   };
@@ -545,8 +557,8 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
         </button>
         <button
           onClick={handleSave}
-          disabled={saved || completedSets.length === 0}
-          className={`w-12 h-12 flex items-center justify-center bg-[#f5f5f5] rounded-full flex-shrink-0 transition-all active:scale-[0.98] ${saved || completedSets.length === 0 ? 'opacity-40' : ''}`}
+          disabled={saved}
+          className={`w-12 h-12 flex items-center justify-center bg-[#f5f5f5] rounded-full flex-shrink-0 transition-all active:scale-[0.98] ${saved ? 'opacity-40' : ''}`}
         >
           <Check size={16} className="text-[#0a0a0a]" />
         </button>
