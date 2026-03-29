@@ -53,7 +53,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` },
     });
     if (error) return { success: false, error: error.message };
     // user exists but no session → email confirmation required
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   loginWithGoogle: async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}${window.location.pathname}` },
     });
     if (error) return { success: false, error: error.message };
     return { success: true };
@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
   loginWithApple: async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}${window.location.pathname}` },
     });
     if (error) return { success: false, error: error.message };
     return { success: true };
@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
   sendPasswordReset: async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+      redirectTo: `${window.location.origin}${window.location.pathname}`,
     });
     if (error) return { success: false, error: error.message };
     return { success: true };
