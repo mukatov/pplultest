@@ -5,6 +5,7 @@ import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Superset, DayType, SetEntry, weightStep } from '../types';
+import { useGoogleSheets } from '../hooks/useGoogleSheets';
 
 // ─── Stepper ────────────────────────────────────────────────────────────────────
 function Stepper({ value, onChange, step, min, label, unit, className }: {
@@ -53,6 +54,7 @@ interface Props {
 export default function SupersetLogModal({ superset, dayType, onClose }: Props) {
   const { exercises, logWorkout, getLastWorkout } = useWorkoutStore();
   const { currentUser } = useAuthStore();
+  const { appendSet: appendToSheet } = useGoogleSheets();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [round, setRound]           = useState(1);
@@ -90,10 +92,16 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   const handleLogAndAdvance = () => {
     if (!currentEx) return;
     triggerHaptic(12);
+    const prevSets  = completed[currentEx.id] ?? [];
+    const setIndex  = prevSets.length + 1;
     setCompleted(prev => ({
       ...prev,
-      [currentEx.id]: [...(prev[currentEx.id] ?? []), { weight, reps }],
+      [currentEx.id]: [...prevSets, { weight, reps }],
     }));
+
+    // Sync to Google Sheets (fire-and-forget)
+    appendToSheet(currentEx.name, dayType, setIndex, weight, reps);
+
     if (isLastInChain) {
       setRound(r => r + 1);
       setCurrentIdx(0);

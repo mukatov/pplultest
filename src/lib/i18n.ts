@@ -20,6 +20,14 @@ export const translations = {
     splits:          'Splits',
     createCustomSplit: 'Create custom split',
     language:        'Language',
+    googleSheets:        'Google Sheets',
+    googleSheetsDesc:    'Every logged set syncs to a spreadsheet',
+    connectGoogleSheets: 'Connect Google Sheets',
+    connected:           'Connected',
+    disconnect:          'Disconnect',
+    connecting:          'Connecting…',
+    openSheet:           'Open ↗',
+    noClientId:          'Set VITE_GOOGLE_CLIENT_ID to enable',
 
     // CreateSplitPage
     newSplit:           'New Split',
@@ -215,6 +223,14 @@ export const translations = {
     splits:          'Сплиты',
     createCustomSplit: 'Создать сплит',
     language:        'Язык',
+    googleSheets:        'Google Таблицы',
+    googleSheetsDesc:    'Каждый подход синхронизируется с таблицей',
+    connectGoogleSheets: 'Подключить Google Таблицы',
+    connected:           'Подключено',
+    disconnect:          'Отключить',
+    connecting:          'Подключение…',
+    openSheet:           'Открыть ↗',
+    noClientId:          'Добавьте VITE_GOOGLE_CLIENT_ID для активации',
 
     // CreateSplitPage
     newSplit:           'Новый сплит',

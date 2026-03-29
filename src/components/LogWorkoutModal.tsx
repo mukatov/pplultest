@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { DayType, SetEntry, WorkoutSet, weightStep } from '../types';
 import { triggerHaptic } from '../utils/haptic';
 import { useT } from '../hooks/useT';
+import { useGoogleSheets } from '../hooks/useGoogleSheets';
 import type { T } from '../lib/i18n';
 
 interface Props {
@@ -247,6 +248,7 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   const { exercises, logWorkout, removeWorkout, getWorkoutHistory } = useWorkoutStore();
   const { currentUser } = useAuthStore();
   const t = useT();
+  const { appendSet: appendToSheet } = useGoogleSheets();
 
   // exerciseId is prefixed with userId, strip it to look up the exercise definition
   const bareId   = exerciseId.includes(':') ? exerciseId.split(':').slice(1).join(':') : exerciseId;
@@ -268,11 +270,13 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   const lastMaxW = prevWorkout ? Math.max(...prevWorkout.sets.map(s => s.weight)) : null;
   const lastMaxR = prevWorkout ? (prevWorkout.sets.find(s => s.weight === lastMaxW)?.reps ?? null) : null;
 
-  // Session state — pre-populate from today's session if re-opening after partial log
-  const initSets   = todaySession?.sets ?? [];
-  const lastTodaySet = todaySession?.sets?.[todaySession.sets.length - 1];
-  const initWeight = lastTodaySet?.weight ?? prevWorkout?.sets?.[0]?.weight ?? 20;
-  const initReps   = lastTodaySet?.reps   ?? prevWorkout?.sets?.[0]?.reps   ?? 12;
+  // Session state — restore from today's auto-saved partial session if re-entering
+  const initSets     = todaySession?.sets ?? [];
+  const lastTodaySet = initSets[initSets.length - 1];
+  // Pre-fill: last set of today > last set of previous workout > defaults
+  const lastPrevSet  = prevWorkout?.sets?.[prevWorkout.sets.length - 1];
+  const initWeight   = lastTodaySet?.weight ?? lastPrevSet?.weight ?? 20;
+  const initReps     = lastTodaySet?.reps   ?? lastPrevSet?.reps   ?? 12;
 
   const [mode, setMode]           = useState<'session' | 'history'>('session');
   const [completedSets, setComp]  = useState<SetEntry[]>(initSets);
@@ -328,9 +332,21 @@ export default function LogWorkoutModal({ exerciseId, exerciseName, dayType, sup
   // Session handlers
   const handleAddSet = () => {
     triggerHaptic(12);
-    const nextIdx = completedSets.length + 1;
-    setComp(prev => [...prev, { weight, reps }]);
-    const nextSet = prevWorkout?.sets?.[nextIdx];
+    const newSets  = [...completedSets, { weight, reps }];
+    const setIndex = newSets.length;
+    setComp(newSets);
+
+    // Auto-save after every set so re-entering the modal restores progress
+    if (currentUser) {
+      if (todaySession) removeWorkout(todaySession.id);
+      logWorkout(exerciseId, newSets, dayType, currentUser.id, supersetId);
+    }
+
+    // Sync to Google Sheets (fire-and-forget)
+    appendToSheet(exerciseName, dayType, setIndex, weight, reps);
+
+    // Pre-fill next set: follow previous workout if available, otherwise keep current values
+    const nextSet = prevWorkout?.sets?.[setIndex];
     if (nextSet) { setWeight(nextSet.weight); setReps(nextSet.reps); }
   };
   const handleRemoveSet = (i: number) => setComp(prev => prev.filter((_, j) => j !== i));

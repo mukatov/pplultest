@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Connecting…</title>
+  <style>
+    body { background: #171717; color: #fafafa; font-family: sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <p>Connecting to Google…</p>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var code  = params.get('code');
+      var error = params.get('error');
+      if (window.opener) {
+        window.opener.postMessage(
+          { type: 'google-oauth', code: code, error: error },
+          window.location.origin
+        );
+      }
+      window.close();
+    })();
+  </script>
+</body>
+</html>
