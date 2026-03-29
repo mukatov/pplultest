@@ -2,7 +2,7 @@
 // Requires VITE_GOOGLE_CLIENT_ID in .env.local
 // Setup: Google Cloud Console → OAuth2 Web client → add <origin>/callback-popup.html as redirect URI
 
-const CLIENT_ID    = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const CLIENT_ID    = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '1006343572351-vr8agm8ho2b01ehpq3873ec9gt2sodtj.apps.googleusercontent.com';
 const SCOPES       = 'https://www.googleapis.com/auth/spreadsheets';
 const REDIRECT_URI = () => `${window.location.origin}${import.meta.env.BASE_URL}callback-popup.html`;
 const SHEETS_API   = 'https://sheets.googleapis.com/v4/spreadsheets';
