@@ -1,104 +1,106 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User } from '../types';
+import { supabase } from '../lib/supabase';
+import type { User as SupabaseUser, AuthChangeEvent, Session } from '@supabase/supabase-js';
 
-function hashPassword(password: string): string {
-  let hash = 0;
-  for (let i = 0; i < password.length; i++) {
-    const char = password.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return hash.toString(16);
+export interface User {
+  id: string;
+  email: string;
+  createdAt: string;
 }
 
-function generateId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-  }
+function mapUser(u: SupabaseUser): User {
+  return { id: u.id, email: u.email ?? '', createdAt: u.created_at };
 }
-
-const DEMO_USER: User = {
-  id: 'demo-user-001',
-  email: 'demo@pplul.app',
-  passwordHash: hashPassword('Demo2024!'),
-  createdAt: '2025-12-01T00:00:00.000Z',
-};
 
 interface AuthState {
   currentUser: User | null;
-  users: User[];
-  register: (email: string, password: string) => { success: boolean; error?: string };
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  resetPassword: (email: string, newPassword: string) => { success: boolean; error?: string };
-  logout: () => void;
+  loading: boolean;
+  initialize: () => () => void;
+  register: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithApple: () => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      currentUser: null,
-      users: [DEMO_USER],
+export const useAuthStore = create<AuthState>()((set) => ({
+  currentUser: null,
+  loading: true,
 
-      register: (email, password) => {
-        try {
-          const { users } = get();
-          if (!email.includes('@')) return { success: false, error: 'Enter a valid email address' };
-          if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-            return { success: false, error: 'Email already registered' };
-          }
-          if (password.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
+  initialize: () => {
+    // Hydrate from existing session
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        set({ currentUser: data.session?.user ? mapUser(data.session.user) : null, loading: false });
+      })
+      .catch(() => {
+        // Network error or bad credentials — still stop the loading spinner
+        set({ loading: false });
+      });
 
-          const user: User = {
-            id: generateId(),
-            email,
-            passwordHash: hashPassword(password),
-            createdAt: new Date().toISOString(),
-          };
-          set(state => ({ users: [...state.users, user], currentUser: user }));
-          return { success: true };
-        } catch (e) {
-          return { success: false, error: 'Registration failed. Please try again.' };
-        }
-      },
+    // Keep in sync; skip PASSWORD_RECOVERY — handled in App.tsx
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      if (event === 'PASSWORD_RECOVERY') return;
+      set({ currentUser: session?.user ? mapUser(session.user) : null, loading: false });
+    });
 
-      login: (email, password) => {
-        const { users } = get();
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!user) return { success: false, error: 'No account found with this email' };
-        if (user.passwordHash !== hashPassword(password)) return { success: false, error: 'Wrong password' };
-        set({ currentUser: user });
-        return { success: true };
-      },
+    return () => subscription.unsubscribe();
+  },
 
-      resetPassword: (email, newPassword) => {
-        const { users } = get();
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (!user) return { success: false, error: 'No account found with this email' };
-        if (newPassword.length < 6) return { success: false, error: 'Password must be at least 6 characters' };
-        const updated = { ...user, passwordHash: hashPassword(newPassword) };
-        set(state => ({ users: state.users.map(u => u.id === updated.id ? updated : u) }));
-        return { success: true };
-      },
+  register: async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    if (error) return { success: false, error: error.message };
+    // user exists but no session → email confirmation required
+    if (data.user && !data.session) return { success: true, needsVerification: true };
+    return { success: true };
+  },
 
-      logout: () => set({ currentUser: null }),
-    }),
-    {
-      name: 'ppl-auth',
-      merge: (persisted: any, current: AuthState) => {
-        const users: User[] = persisted?.users ?? [];
-        const hasDemo = users.some((u: User) => u.id === DEMO_USER.id);
-        return {
-          ...current,
-          ...persisted,
-          users: hasDemo ? users : [DEMO_USER, ...users],
-        };
-      },
-    }
-  )
-);
+  login: async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  loginWithGoogle: async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  loginWithApple: async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  sendPasswordReset: async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  updatePassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ currentUser: null });
+  },
+}));

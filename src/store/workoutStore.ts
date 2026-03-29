@@ -201,6 +201,7 @@ interface WorkoutState {
   splits: Split[];
   activeSplitId: string;
   personalRecords: PersonalRecord[];
+  finishedDays: Record<string, string>; // dayType → toDateString() of finished date
 
   addExercise: (exercise: Exercise) => void;
   updateExercise: (exercise: Exercise) => void;
@@ -220,6 +221,7 @@ interface WorkoutState {
   addSplit: (split: Split) => void;
   deleteSplit: (id: string) => void;
   setActiveSplit: (id: string) => void;
+  markDayFinished: (dayType: string) => void;
 }
 
 function scopedKey(key: string, userId: string) {
@@ -234,6 +236,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       splits: BUILT_IN_SPLITS,
       activeSplitId: 'pplul',
       personalRecords: [],
+      finishedDays: {},
 
       addExercise: (exercise) =>
         set(state => ({ exercises: [...state.exercises, exercise] })),
@@ -370,6 +373,11 @@ export const useWorkoutStore = create<WorkoutState>()(
 
       setActiveSplit: (id) =>
         set({ activeSplitId: id }),
+
+      markDayFinished: (dayType) =>
+        set(state => ({
+          finishedDays: { ...state.finishedDays, [dayType]: new Date().toDateString() },
+        })),
     }),
     {
       name: 'ppl-workouts',

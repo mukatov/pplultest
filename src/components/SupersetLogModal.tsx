@@ -1,23 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Minus, Plus, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
-import { Superset, DayType, SetEntry } from '../types';
+import { Superset, DayType, SetEntry, weightStep } from '../types';
+import { useGoogleSheets } from '../hooks/useGoogleSheets';
 
-// ─── Stepper (same pattern as LogWorkoutModal) ─────────────────────────────────
-function Stepper({ value, onChange, step, min, label, unit }: {
-  value: number; onChange: (v: number) => void; step: number; min: number; label: string; unit?: string;
+// ─── Stepper ────────────────────────────────────────────────────────────────────
+function Stepper({ value, onChange, step, min, label, unit, className }: {
+  value: number; onChange: (v: number) => void; step: number; min: number;
+  label: string; unit?: string; className?: string;
 }) {
-  const haptic = () => navigator.vibrate?.(8);
-  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); haptic(); };
-  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); haptic(); };
+  const dec = () => { onChange(Math.max(min, parseFloat((value - step).toFixed(2)))); triggerHaptic(); };
+  const inc = () => { onChange(parseFloat((value + step).toFixed(2))); triggerHaptic(); };
 
   const dragRef  = useRef<{ lastY: number } | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button')) return;
     e.preventDefault();
     dragRef.current = { lastY: e.clientY };
     trackRef.current?.setPointerCapture(e.pointerId);
@@ -31,17 +33,11 @@ function Stepper({ value, onChange, step, min, label, unit }: {
   const onUp = () => { dragRef.current = null; setDragging(false); };
 
   return (
-    <div className={`bg-[#262626] rounded-3xl flex-1 flex flex-col items-center gap-2 py-5 px-6 transition-colors ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
+    <div className={`bg-[#262626] rounded-3xl flex flex-col items-center gap-2 py-5 px-4 transition-colors ${className ?? 'flex-1'} ${dragging ? 'bg-[#1f1f1f]' : ''}`}>
       <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{label}</p>
       <div ref={trackRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-        style={{ touchAction: 'none' }} className="flex items-center justify-between w-full cursor-ns-resize select-none">
-        <button onClick={dec} className={`w-6 h-6 flex items-center justify-center rounded-[4px] transition-opacity ${value <= min ? 'opacity-30' : ''}`}>
-          <Minus size={16} className="text-[#fafafa]" />
-        </button>
-        <span className="text-5xl font-semibold text-[#fafafa] tracking-[-1.5px] min-w-[3rem] text-center leading-[48px]">{value}</span>
-        <button onClick={inc} className="w-6 h-6 flex items-center justify-center rounded-[4px]">
-          <Plus size={16} className="text-[#fafafa]" />
-        </button>
+        style={{ touchAction: 'none' }} className="w-full cursor-ns-resize select-none flex items-center justify-center">
+        <span className="text-5xl font-mono text-[#fafafa] text-center w-full leading-[48px]">{value}</span>
       </div>
       {unit && <p className="text-xs text-[#fafafa] uppercase tracking-[1.5px]">{unit}</p>}
     </div>
@@ -58,6 +54,7 @@ interface Props {
 export default function SupersetLogModal({ superset, dayType, onClose }: Props) {
   const { exercises, logWorkout, getLastWorkout } = useWorkoutStore();
   const { currentUser } = useAuthStore();
+  const { appendSet: appendToSheet } = useGoogleSheets();
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [round, setRound]           = useState(1);
@@ -66,6 +63,8 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   // exerciseId → all sets logged so far this session
   const [completed, setCompleted]   = useState<Record<string, SetEntry[]>>({});
   const [saved, setSaved]           = useState(false);
+  const scrollHapticRef = useRef(0);
+  const t = useT();
 
   const exObjects = superset.exerciseIds.map(id => exercises.find(e => e.id === id)).filter(Boolean);
   const currentEx = exObjects[currentIdx];
@@ -92,11 +91,17 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
 
   const handleLogAndAdvance = () => {
     if (!currentEx) return;
-    navigator.vibrate?.(12);
+    triggerHaptic(12);
+    const prevSets  = completed[currentEx.id] ?? [];
+    const setIndex  = prevSets.length + 1;
     setCompleted(prev => ({
       ...prev,
-      [currentEx.id]: [...(prev[currentEx.id] ?? []), { weight, reps }],
+      [currentEx.id]: [...prevSets, { weight, reps }],
     }));
+
+    // Sync to Google Sheets (fire-and-forget)
+    appendToSheet(currentEx.name, dayType, setIndex, weight, reps);
+
     if (isLastInChain) {
       setRound(r => r + 1);
       setCurrentIdx(0);
@@ -122,7 +127,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
   const currentSets = completed[currentEx.id] ?? [];
   const nextEx = isLastInChain ? exObjects[0] : exObjects[currentIdx + 1];
   const nextLabel = isLastInChain
-    ? `Round ${round + 1} · ${exObjects[0]?.name}`
+    ? `${t.round} ${round + 1} · ${exObjects[0]?.name}`
     : nextEx?.name;
 
   return (
@@ -134,7 +139,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         </button>
         <div className="flex-1 text-center">
           <h1 className="text-xl font-semibold text-[#fafafa] uppercase tracking-wide leading-none">{currentEx.name}</h1>
-          <p className="text-xs text-[#737373] mt-1 uppercase tracking-[1.5px]">Round {round}</p>
+          <p className="text-xs text-[#737373] mt-1 uppercase tracking-[1.5px]">{t.round} {round}</p>
         </div>
         <div className="w-10" />
       </div>
@@ -144,7 +149,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         {exObjects.map((ex, idx) => (
           <div key={ex?.id ?? idx} className="flex items-center">
             <button
-              onClick={() => setCurrentIdx(idx)}
+              onClick={() => { triggerHaptic(10); setCurrentIdx(idx); }}
               className="flex flex-col items-center gap-1"
             >
               <div className={`w-2.5 h-2.5 rounded-full transition-all ${
@@ -176,13 +181,32 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
         ))}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-4">
-        {/* Sets logged this session for current exercise */}
+      {/* Inputs pinned below header */}
+      <div className="flex-shrink-0 px-4 pt-2 pb-4 flex flex-col gap-3">
+        <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
+          {t.set.toUpperCase()} {currentSets.length + 1}
+        </p>
+        <div className="flex gap-2.5">
+          <Stepper value={weight} onChange={setWeight} step={weightStep(currentEx?.equipment)} min={0} label={t.weight} unit={t.kg} className="flex-[3]" />
+          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label={t.reps}             className="flex-[2]" />
+        </div>
+      </div>
+
+      {/* Scrollable: sets logged this session */}
+      <div
+        className="flex-1 overflow-y-auto min-h-0 px-4 pb-3 overscroll-contain"
+        onScroll={(e) => {
+          const y = e.currentTarget.scrollTop;
+          if (Math.abs(y - scrollHapticRef.current) >= 80) {
+            scrollHapticRef.current = y;
+            triggerHaptic(5);
+          }
+        }}
+      >
         {currentSets.length > 0 && (
           <div className="bg-[#262626] rounded-2xl p-3">
             <p className="text-[10px] text-[#525252] uppercase tracking-[1.5px] mb-2 text-center">
-              {currentSets.length} {currentSets.length === 1 ? 'set' : 'sets'} logged this session
+              {currentSets.length} {t.setsLoggedSession}
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {currentSets.map((s, i) => (
@@ -194,17 +218,6 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
             </div>
           </div>
         )}
-
-        {/* Set label */}
-        <p className="text-center text-xl font-semibold text-[#fafafa] uppercase tracking-wide">
-          SET {currentSets.length + 1}
-        </p>
-
-        {/* Steppers */}
-        <div className="flex gap-2.5">
-          <Stepper value={weight} onChange={setWeight} step={2.5} min={0} label="WEIGHT" unit="KG" />
-          <Stepper value={reps}   onChange={setReps}   step={1}   min={1} label="REPS" />
-        </div>
       </div>
 
       {/* Bottom actions */}
@@ -214,7 +227,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
           onClick={handleLogAndAdvance}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-sm active:scale-[0.98] transition-transform"
         >
-          Log Set
+          {t.logSet}
           <span className="flex items-center gap-1 text-[#737373] font-normal">
             <ChevronRight size={14} />
             {nextLabel}
@@ -231,7 +244,7 @@ export default function SupersetLogModal({ superset, dayType, onClose }: Props) 
                 : 'bg-[#262626] text-[#fafafa] border border-[#404040]'
             }`}
           >
-            {saved ? '✓ Saved' : `Finish Superset · ${totalSetsAcrossAll} sets`}
+            {saved ? t.saved : `${t.finishSuperset} · ${totalSetsAcrossAll} ${t.sets}`}
           </button>
         )}
       </div>

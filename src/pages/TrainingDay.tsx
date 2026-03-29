@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trophy, ChevronLeft, Clock, Link2, X, GripVertical, CheckCircle2 } from 'lucide-react';
+import { triggerHaptic } from '../utils/haptic';
+import { useT } from '../hooks/useT';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { Exercise, Superset } from '../types';
@@ -57,8 +59,9 @@ export default function TrainingDay() {
   const splits        = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const workoutSets   = useWorkoutStore(s => s.workoutSets);
-  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset } = useWorkoutStore();
+  const { exercises, getLastWorkout, getPersonalRecord, updateDayExercises, removeSuperset, markDayFinished } = useWorkoutStore();
   const { currentUser } = useAuthStore();
+  const t = useT();
 
   // Modal state
   const [logState,       setLogState]      = useState<{ exerciseId: string; supersetId?: string } | null>(null);
@@ -74,7 +77,8 @@ export default function TrainingDay() {
   const [dragDeltaY, setDragDeltaY] = useState(0);
   const itemRefs  = useRef<(HTMLDivElement | null)[]>([]);
   const rectsRef  = useRef<DOMRect[]>([]);
-  const startYRef = useRef(0);
+  const startYRef      = useRef(0);
+  const scrollHapticRef = useRef(0);
 
   const activeSplit  = splits.find(s => s.id === activeSplitId);
   const trainingDay  = activeSplit?.days?.find(d => d.type === dayType);
@@ -87,7 +91,9 @@ export default function TrainingDay() {
   function isLoggedToday(exerciseId: string): boolean {
     if (!currentUser) return false;
     const key = `${currentUser.id}:${exerciseId}`;
-    return workoutSets.some(ws => ws.exerciseId === key && new Date(ws.date).toDateString() === today);
+    return workoutSets.some(
+      ws => ws.exerciseId === key && ws.dayType === dayType && new Date(ws.date).toDateString() === today
+    );
   }
 
   function handleAddExercise(exercise: Exercise) {
@@ -111,7 +117,7 @@ export default function TrainingDay() {
     setDragIdx(idx);
     setTargetIdx(idx);
     setDragDeltaY(0);
-    navigator.vibrate?.(15);
+    triggerHaptic(15);
   }, []);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -124,7 +130,10 @@ export default function TrainingDay() {
       if (y < rect.bottom) { newTarget = i; break; }
       newTarget = i;
     }
-    setTargetIdx(newTarget);
+    setTargetIdx(prev => {
+      if (newTarget !== prev) triggerHaptic(8);
+      return newTarget;
+    });
   }, [dragIdx]);
 
   const onPointerUp = useCallback(() => {
@@ -177,6 +186,7 @@ export default function TrainingDay() {
   // ─── Finish day ────────────────────────────────────────────────────────────
   const completedToday = dayExercises.filter(e => isLoggedToday(e.id)).length;
   const handleFinish = () => {
+    markDayFinished(dayType);
     navigate('/home', { state: { finishedDay: trainingDay?.label ?? dayType } });
   };
 
@@ -194,7 +204,7 @@ export default function TrainingDay() {
 
     return (
       <button
-        onClick={() => setLogState({ exerciseId: exercise.id, supersetId })}
+        onClick={() => { triggerHaptic(10); setLogState({ exerciseId: exercise.id, supersetId }); }}
         className={`w-full flex items-center gap-3 px-4 py-5 rounded-2xl transition-colors active:scale-[0.98] ${
           doneToday ? 'bg-[#262626] border border-[#0d9488]' : 'bg-[#262626] hover:bg-[#2e2e2e]'
         }`}
@@ -234,7 +244,7 @@ export default function TrainingDay() {
               <span className="text-xs text-[#525252]">{totalSets} sets · {maxWeight}kg</span>
             </div>
           ) : (
-            <p className="text-xs text-[#525252] mt-1">Tap to log sets</p>
+            <p className="text-xs text-[#525252] mt-1">{t.tapToLogSets}</p>
           )}
         </div>
 
@@ -285,13 +295,22 @@ export default function TrainingDay() {
         )}
         {completedToday > 0 && (
           <p className="text-center text-xs text-[#0d9488] mt-2">
-            {completedToday}/{dayExercises.length} done today
+            {completedToday}/{dayExercises.length} {t.doneToday}
           </p>
         )}
       </div>
 
       {/* Scrollable list */}
-      <div className="flex-1 overflow-y-auto px-4 py-2">
+      <div
+        className="flex-1 overflow-y-auto px-4 py-2 overscroll-contain"
+        onScroll={(e) => {
+          const y = e.currentTarget.scrollTop;
+          if (Math.abs(y - scrollHapticRef.current) >= 80) {
+            scrollHapticRef.current = y;
+            triggerHaptic(5);
+          }
+        }}
+      >
         {/* Action buttons — TOP of list */}
         <div className="flex gap-2 mb-3">
           <button
@@ -299,22 +318,22 @@ export default function TrainingDay() {
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-white/5 border border-[#404040] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
           >
             <Plus size={15} />
-            New exercise
+            {t.newExercise}
           </button>
           <button
             onClick={() => setShowSuperset(true)}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-white/5 border border-[#404040] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
           >
             <Link2 size={15} />
-            Add superset
+            {t.addSuperset}
           </button>
         </div>
 
         {/* Exercise cards */}
         {baseItems.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-[#737373] font-medium">No exercises yet.</p>
-            <p className="text-[#525252] text-sm mt-1">Tap "New exercise" above to get started.</p>
+            <p className="text-[#737373] font-medium">{t.noExercisesYet}</p>
+            <p className="text-[#525252] text-sm mt-1">{t.noExercisesTip}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -350,7 +369,7 @@ export default function TrainingDay() {
                           onClick={() => setLogSuperset(item.superset)}
                         >
                           <Link2 size={12} className="text-[#fd9a00]" />
-                          <span className="text-[10px] font-bold text-[#fd9a00] uppercase tracking-[2px]">Superset</span>
+                          <span className="text-[10px] font-bold text-[#fd9a00] uppercase tracking-[2px]">{t.superset}</span>
                         </button>
                         <button
                           onClick={() => removeSuperset(dayType, item.superset.id)}
@@ -388,11 +407,11 @@ export default function TrainingDay() {
       {/* Bottom — Finish session (always visible, primary style) */}
       <div className="px-4 py-6 flex-shrink-0">
         <button
-          onClick={() => setShowFinishConf(true)}
+          onClick={() => { triggerHaptic(12); setShowFinishConf(true); }}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-base active:scale-[0.98] hover:bg-white transition-colors"
         >
           <CheckCircle2 size={18} className="text-[#0a0a0a]" />
-          Finish session
+          {t.finishSession}
         </button>
       </div>
 
@@ -401,24 +420,24 @@ export default function TrainingDay() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-end">
           <div className="w-full bg-[#1c1c1c] rounded-t-3xl p-6 pb-10 space-y-4">
             <h2 className="text-xl font-semibold text-[#fafafa] text-center">
-              Wrap up {trainingDay?.label ?? dayType}?
+              {t.wrapUp} {trainingDay?.label ?? dayType}?
             </h2>
             <p className="text-sm text-[#737373] text-center">
               {completedToday > 0
-                ? `${completedToday}/${dayExercises.length} exercises logged today`
-                : 'No exercises logged yet'}
+                ? `${completedToday}/${dayExercises.length} ${t.exercisesLoggedToday}`
+                : t.noExercisesLogged}
             </p>
             <button
               onClick={handleFinish}
               className="w-full py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-semibold text-sm active:scale-[0.98]"
             >
-              Finish session
+              {t.finishSession}
             </button>
             <button
               onClick={() => setShowFinishConf(false)}
               className="w-full py-3 rounded-full bg-[#262626] text-[#fafafa] font-medium text-sm active:scale-[0.98]"
             >
-              Keep going
+              {t.keepGoing}
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronLeft, Check, Link2, Search } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { Exercise, DayType } from '../types';
+import { useT } from '../hooks/useT';
 
 function generateId(): string {
   try { return crypto.randomUUID(); }
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function SupersetModal({ dayType, onClose }: Props) {
+  const t = useT();
   const splits = useWorkoutStore(s => s.splits);
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const { exercises, addSuperset, updateDayExercises } = useWorkoutStore();
@@ -61,6 +63,7 @@ export default function SupersetModal({ dayType, onClose }: Props) {
   const notInDay     = filtered.filter(e => !inDay.has(e.id));
 
   function ExRow({ exercise, disabled, subtitle }: { exercise: Exercise; disabled?: boolean; subtitle?: string }) {
+    const t = useT();
     const isSelected = selected.includes(exercise.id);
     if (disabled) {
       return (
@@ -70,7 +73,7 @@ export default function SupersetModal({ dayType, onClose }: Props) {
           </div>
           <div className="flex-1 text-left">
             <p className="font-semibold text-[#737373] uppercase tracking-wide text-sm">{exercise.name}</p>
-            <p className="text-xs text-[#525252] mt-0.5">{subtitle ?? 'Already in a superset'}</p>
+            <p className="text-xs text-[#525252] mt-0.5">{subtitle ?? t.alreadyInSuperset}</p>
           </div>
         </div>
       );
@@ -110,18 +113,18 @@ export default function SupersetModal({ dayType, onClose }: Props) {
             <ChevronLeft size={16} className="text-[#fafafa]" />
           </button>
           <h1 className="flex-1 text-center text-2xl font-semibold tracking-tight text-[#fafafa] uppercase">
-            Create Superset
+            {t.createSuperset}
           </h1>
           <div className="w-10" />
         </div>
-        <p className="text-center text-sm text-[#737373] mb-3">Select 2 or more exercises</p>
+        <p className="text-center text-sm text-[#737373] mb-3">{t.select2orMore}</p>
 
         {/* Search */}
         <div className="flex items-center gap-2 bg-[#262626] rounded-xl px-3 py-2.5">
           <Search size={14} className="text-[#525252] flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search exercises..."
+            placeholder={t.searchExercises}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-sm text-[#fafafa] placeholder:text-[#525252] outline-none"
@@ -134,7 +137,7 @@ export default function SupersetModal({ dayType, onClose }: Props) {
         {/* In this day */}
         {inDayFree.length > 0 && (
           <>
-            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-1">In this day</p>
+            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-1">{t.inThisDay}</p>
             {inDayFree.map(e => <ExRow key={e.id} exercise={e} />)}
           </>
         )}
@@ -142,21 +145,21 @@ export default function SupersetModal({ dayType, onClose }: Props) {
         {/* Other exercises */}
         {notInDay.length > 0 && (
           <>
-            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-2">All exercises</p>
-            {notInDay.map(e => <ExRow key={e.id} exercise={e} subtitle="Adds to day" />)}
+            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-2">{t.allExercises}</p>
+            {notInDay.map(e => <ExRow key={e.id} exercise={e} subtitle={t.addsToDay} />)}
           </>
         )}
 
         {/* Already in a superset */}
         {inDayGrouped.length > 0 && (
           <>
-            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-2">Already grouped</p>
+            <p className="text-[10px] font-bold text-[#525252] uppercase tracking-[2px] px-1 pt-2">{t.alreadyGrouped}</p>
             {inDayGrouped.map(e => <ExRow key={e.id} exercise={e} disabled />)}
           </>
         )}
 
         {filtered.length === 0 && (
-          <p className="text-center text-[#525252] text-sm py-12">No exercises found</p>
+          <p className="text-center text-[#525252] text-sm py-12">{t.noExercisesFound}</p>
         )}
       </div>
 
@@ -168,8 +171,8 @@ export default function SupersetModal({ dayType, onClose }: Props) {
           className="w-full py-3 rounded-full font-medium text-sm transition-all active:scale-[0.98] disabled:opacity-40 bg-[#fd9a00] text-[#0a0a0a]"
         >
           {selected.length < 2
-            ? `Select ${2 - selected.length} more`
-            : `Create Superset · ${selected.length} exercises`}
+            ? t.selectMore(2 - selected.length)
+            : t.createSupersetWith(selected.length)}
         </button>
       </div>
     </div>
