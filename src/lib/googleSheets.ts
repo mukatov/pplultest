@@ -11,6 +11,7 @@ const SUPABASE_KEY = 'sb_publishable_DkJGurNJbiR2vBW1o1mQCg_qozDvuLG';
 const EDGE_HEADERS = {
   'Content-Type':  'application/json',
   'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'apikey':        SUPABASE_KEY,
 };
 
 const REDIRECT_URI = () => `${window.location.origin}${import.meta.env.BASE_URL}callback-popup.html`;
@@ -65,7 +66,7 @@ export async function exchangeCode(code: string, codeVerifier: string): Promise<
     body:    JSON.stringify({ code, codeVerifier, redirectUri: REDIRECT_URI() }),
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error_description ?? data.error);
+  if (data.error || !data.access_token) throw new Error(data.error_description ?? data.error ?? data.message ?? 'Token exchange failed');
   return { accessToken: data.access_token, refreshToken: data.refresh_token ?? null, expiresIn: data.expires_in };
 }
 
@@ -77,7 +78,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<{ access
     body:    JSON.stringify({ refreshToken }),
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error_description ?? data.error);
+  if (data.error || !data.access_token) throw new Error(data.error_description ?? data.error ?? data.message ?? 'Token refresh failed');
   return { accessToken: data.access_token, expiresIn: data.expires_in };
 }
 
