@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useGoogleStore } from '../store/googleStore';
 import {
   hasGoogleClientId,
@@ -57,15 +56,6 @@ export function useGoogleSheets() {
     // No pending code — start a new OAuth redirect
     await startGoogleOAuth();
   };
-
-  /** On mount: auto-complete if returning from OAuth redirect. */
-  useEffect(() => {
-    const pendingCode     = sessionStorage.getItem('google_oauth_code');
-    const pendingVerifier = sessionStorage.getItem('google_oauth_verifier');
-    if (pendingCode && pendingVerifier) {
-      connect().catch(console.error);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Append one set row to the connected spreadsheet.
