@@ -20,21 +20,11 @@ function randomString(length: number) {
   return Array.from(arr, b => chars[b % chars.length]).join('');
 }
 
-async function sha256b64url(plain: string) {
-  const data  = new TextEncoder().encode(plain);
-  const hash  = await crypto.subtle.digest('SHA-256', data);
-  const bytes = new Uint8Array(hash);
-  let bin = '';
-  bytes.forEach(b => { bin += String.fromCharCode(b); });
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 // ─── OAuth redirect flow ──────────────────────────────────────────────────────
 
 /** Saves PKCE verifier + current URL, then redirects to Google consent screen. */
 export async function startGoogleOAuth(): Promise<void> {
-  const verifier  = randomString(64);
-  const challenge = await sha256b64url(verifier);
+  const verifier = randomString(64);
 
   sessionStorage.setItem('google_oauth_verifier', verifier);
   sessionStorage.setItem('google_oauth_return',   window.location.href);
@@ -46,8 +36,8 @@ export async function startGoogleOAuth(): Promise<void> {
     scope:                 SCOPES,
     access_type:           'offline',
     prompt:                'consent',
-    code_challenge:        challenge,
-    code_challenge_method: 'S256',
+    code_challenge:        verifier,
+    code_challenge_method: 'plain',
   });
 
   window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
