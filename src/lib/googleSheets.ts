@@ -6,7 +6,8 @@ const CLIENT_ID    = '432754734536-bvvmjh2vobv0hg45rk0drbt06t3oa0fv.apps.googleu
 const SCOPES       = 'https://www.googleapis.com/auth/spreadsheets';
 const SHEETS_API   = 'https://sheets.googleapis.com/v4/spreadsheets';
 const EDGE_FN_URL  = 'https://qdliyanbtrukhjwdlffn.supabase.co/functions/v1/google-token';
-const SUPABASE_KEY = 'sb_publishable_DkJGurNJbiR2vBW1o1mQCg_qozDvuLG';
+
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkbGl5YW5idHJ1a2hqd2RsZmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzYyNDksImV4cCI6MjA5MDE1MjI0OX0.sITGdxibfpePLovODKOInHHlmzYuAjHYlzqAfdGh4fE';
 
 const EDGE_HEADERS = {
   'Content-Type':  'application/json',
