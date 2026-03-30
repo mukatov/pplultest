@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useGoogleStore } from '../store/googleStore';
 import {
   hasGoogleClientId,
   startGoogleOAuth,
+  exchangeCode,
   refreshAccessToken,
   createSpreadsheet,
   initSheetHeaders,
@@ -31,18 +33,39 @@ export function useGoogleSheets() {
     }
   };
 
-  /** Run OAuth flow, create spreadsheet if needed, store everything. */
+  /** Complete the OAuth flow after a redirect callback, or start a new one. */
   const connect = async () => {
-    const { accessToken, refreshToken, expiresIn } = await startGoogleOAuth();
-    store.setTokens(accessToken, refreshToken, expiresIn);
+    const pendingCode     = sessionStorage.getItem('google_oauth_code');
+    const pendingVerifier = sessionStorage.getItem('google_oauth_verifier');
 
-    // Re-use existing sheet if already stored (e.g. reconnecting after token expiry)
-    if (!store.sheetId) {
-      const sheetId = await createSpreadsheet(accessToken, 'PPL/UL Workouts');
-      await initSheetHeaders(accessToken, sheetId);
-      store.setSheet(sheetId, 'PPL/UL Workouts');
+    if (pendingCode && pendingVerifier) {
+      sessionStorage.removeItem('google_oauth_code');
+      sessionStorage.removeItem('google_oauth_verifier');
+      sessionStorage.removeItem('google_oauth_return');
+
+      const { accessToken, refreshToken, expiresIn } = await exchangeCode(pendingCode, pendingVerifier);
+      store.setTokens(accessToken, refreshToken, expiresIn);
+
+      if (!store.sheetId) {
+        const sheetId = await createSpreadsheet(accessToken, 'PPL/UL Workouts');
+        await initSheetHeaders(accessToken, sheetId);
+        store.setSheet(sheetId, 'PPL/UL Workouts');
+      }
+      return;
     }
+
+    // No pending code — start a new OAuth redirect
+    await startGoogleOAuth();
   };
+
+  /** On mount: auto-complete if returning from OAuth redirect. */
+  useEffect(() => {
+    const pendingCode     = sessionStorage.getItem('google_oauth_code');
+    const pendingVerifier = sessionStorage.getItem('google_oauth_verifier');
+    if (pendingCode && pendingVerifier) {
+      connect().catch(console.error);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Append one set row to the connected spreadsheet.

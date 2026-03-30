@@ -13,15 +13,28 @@
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
-      var code  = params.get('code');
-      var error = params.get('error');
+      var code   = params.get('code');
+      var error  = params.get('error');
+
       if (window.opener) {
+        // Legacy popup flow
         window.opener.postMessage(
           { type: 'google-oauth', code: code, error: error },
           window.location.origin
         );
+        window.close();
+      } else {
+        // Redirect flow (PWA / browsers that block popups)
+        if (code)  sessionStorage.setItem('google_oauth_code',  code);
+        if (error) sessionStorage.setItem('google_oauth_error', error);
+        // Return to the page that started the OAuth flow
+        var ret = sessionStorage.getItem('google_oauth_return');
+        if (!ret) {
+          // Fallback: derive app root from current path (/pplultest/callback-popup.html → /pplultest/)
+          ret = window.location.origin + window.location.pathname.replace('callback-popup.html', '');
+        }
+        window.location.replace(ret);
       }
-      window.close();
     })();
   </script>
 </body>
