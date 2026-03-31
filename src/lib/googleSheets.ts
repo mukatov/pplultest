@@ -1,13 +1,11 @@
 // ─── Google Sheets integration ────────────────────────────────────────────────
-// Token exchange handled by Supabase edge function (secret never in browser).
-// OAuth uses redirect flow instead of popup (PWA compatible).
+// Token exchange via Supabase edge function (keeps client_secret server-side).
+// OAuth uses redirect flow (PWA compatible, no popup).
 
-const CLIENT_ID    = '432754734536-bvvmjh2vobv0hg45rk0drbt06t3oa0fv.apps.googleusercontent.com';
-const SCOPES       = 'https://www.googleapis.com/auth/spreadsheets';
-const SHEETS_API   = 'https://sheets.googleapis.com/v4/spreadsheets';
-const EDGE_FN_URL  = 'https://qdliyanbtrukhjwdlffn.supabase.co/functions/v1/google-token';
-
-const EDGE_HEADERS = { 'Content-Type': 'application/json' };
+const CLIENT_ID   = '432754734536-bvvmjh2vobv0hg45rk0drbt06t3oa0fv.apps.googleusercontent.com';
+const SCOPES      = 'https://www.googleapis.com/auth/spreadsheets';
+const SHEETS_API  = 'https://sheets.googleapis.com/v4/spreadsheets';
+const EDGE_FN_URL = 'https://qdliyanbtrukhjwdlffn.supabase.co/functions/v1/google-token';
 
 const REDIRECT_URI = () => `${window.location.origin}${import.meta.env.BASE_URL}callback-popup.html`;
 
@@ -24,7 +22,6 @@ function randomString(length: number) {
 
 // ─── OAuth redirect flow ──────────────────────────────────────────────────────
 
-/** Saves PKCE verifier + current URL, then redirects to Google consent screen. */
 export async function startGoogleOAuth(): Promise<void> {
   const verifier = randomString(64);
 
@@ -53,11 +50,10 @@ export interface OAuthResult {
   expiresIn:    number;
 }
 
-/** Exchange an auth code (+ PKCE verifier) for tokens via the edge function. */
 export async function exchangeCode(code: string, codeVerifier: string): Promise<OAuthResult> {
   const res  = await fetch(EDGE_FN_URL, {
     method:  'POST',
-    headers: EDGE_HEADERS,
+    headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ code, codeVerifier, redirectUri: REDIRECT_URI() }),
   });
   const data = await res.json();
@@ -65,11 +61,10 @@ export async function exchangeCode(code: string, codeVerifier: string): Promise<
   return { accessToken: data.access_token, refreshToken: data.refresh_token ?? null, expiresIn: data.expires_in };
 }
 
-/** Refresh an access token via the edge function. */
 export async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
   const res  = await fetch(EDGE_FN_URL, {
     method:  'POST',
-    headers: EDGE_HEADERS,
+    headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ refreshToken }),
   });
   const data = await res.json();
