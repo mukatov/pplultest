@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, Check, Trash2, Plus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
@@ -14,13 +14,6 @@ export default function Settings() {
   const { isConnected, sheetId, sheetTitle, connect, disconnect } = useGoogleSheets();
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState('');
-
-  // Auto-complete OAuth exchange when returning from Google redirect
-  useEffect(() => {
-    if (sessionStorage.getItem('google_oauth_code')) {
-      handleConnect();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConnect = async () => {
     setConnectError('');
