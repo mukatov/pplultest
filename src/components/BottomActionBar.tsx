@@ -1,58 +1,81 @@
 import { Play, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, LayoutGroup } from 'framer-motion';
 import { useT } from '../hooks/useT';
 
 interface Props {
-  /** Which page is currently active — determines which slot shows as a pill */
   active: 'home' | 'settings' | 'profile';
-  /** Called when the Workout pill is tapped (home only) */
   onWorkout?: () => void;
 }
+
+const SPRING = { type: 'spring', stiffness: 400, damping: 32, mass: 0.8 } as const;
 
 export default function BottomActionBar({ active, onWorkout }: Props) {
   const navigate = useNavigate();
   const t = useT();
 
-  const iconBtn = 'w-10 h-10 flex items-center justify-center bg-[#262626] rounded-full flex-shrink-0 active:scale-95 transition-transform';
-  const pillBtn = 'flex items-center gap-2 px-8 py-3 bg-[#f5f5f5] text-[#0a0a0a] rounded-full font-medium text-base flex-shrink-0 active:scale-[0.97] transition-transform';
+  const iconBase = 'relative w-10 h-10 flex items-center justify-center rounded-full flex-shrink-0 z-10';
+  const pillBase = 'relative flex items-center gap-2 px-8 py-3 rounded-full font-medium text-base flex-shrink-0 z-10';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 pb-8 pt-3 flex items-center justify-center gap-3 bg-[#171717] z-40">
-      {/* Settings slot */}
-      {active === 'settings' ? (
-        <button className={pillBtn}>
-          <Settings size={16} />
-          {t.settings}
-        </button>
-      ) : (
-        <button onClick={() => navigate('/settings')} className={iconBtn}>
-          <Settings size={16} className="text-[#fafafa]" />
-        </button>
-      )}
+    <LayoutGroup>
+      <div className="fixed bottom-0 left-0 right-0 pb-8 pt-3 flex items-center justify-center gap-3 bg-[#171717] z-40">
 
-      {/* Workout slot */}
-      {active === 'home' ? (
-        <button onClick={onWorkout} className={pillBtn}>
-          <Play size={16} className="fill-[#0a0a0a]" />
-          {t.workout}
-        </button>
-      ) : (
-        <button onClick={() => navigate('/home')} className={iconBtn}>
-          <Play size={14} className="text-[#fafafa] fill-[#fafafa] ml-0.5" />
-        </button>
-      )}
+        {/* Settings slot */}
+        {active === 'settings' ? (
+          <button className={`${pillBase} text-[#0a0a0a]`}>
+            <motion.div
+              layoutId="pill-bg"
+              className="absolute inset-0 bg-[#f5f5f5] rounded-full"
+              transition={SPRING}
+            />
+            <Settings size={16} className="relative z-10" />
+            <span className="relative z-10">{t.settings}</span>
+          </button>
+        ) : (
+          <button onClick={() => navigate('/settings')} className={`${iconBase} active:scale-90 transition-transform duration-150`}>
+            <motion.div className="absolute inset-0 bg-[#262626] rounded-full" />
+            <Settings size={16} className="relative z-10 text-[#fafafa]" />
+          </button>
+        )}
 
-      {/* Profile slot */}
-      {active === 'profile' ? (
-        <button className={pillBtn}>
-          <User size={16} />
-          {t.profile}
-        </button>
-      ) : (
-        <button onClick={() => navigate('/profile')} className={iconBtn}>
-          <User size={16} className="text-[#fafafa]" />
-        </button>
-      )}
-    </div>
+        {/* Workout slot */}
+        {active === 'home' ? (
+          <button onClick={onWorkout} className={`${pillBase} text-[#0a0a0a]`}>
+            <motion.div
+              layoutId="pill-bg"
+              className="absolute inset-0 bg-[#f5f5f5] rounded-full"
+              transition={SPRING}
+            />
+            <Play size={16} className="relative z-10 fill-[#0a0a0a]" />
+            <span className="relative z-10">{t.workout}</span>
+          </button>
+        ) : (
+          <button onClick={() => navigate('/home')} className={`${iconBase} active:scale-90 transition-transform duration-150`}>
+            <motion.div className="absolute inset-0 bg-[#262626] rounded-full" />
+            <Play size={14} className="relative z-10 text-[#fafafa] fill-[#fafafa] ml-0.5" />
+          </button>
+        )}
+
+        {/* Profile slot */}
+        {active === 'profile' ? (
+          <button className={`${pillBase} text-[#0a0a0a]`}>
+            <motion.div
+              layoutId="pill-bg"
+              className="absolute inset-0 bg-[#f5f5f5] rounded-full"
+              transition={SPRING}
+            />
+            <User size={16} className="relative z-10" />
+            <span className="relative z-10">{t.profile}</span>
+          </button>
+        ) : (
+          <button onClick={() => navigate('/profile')} className={`${iconBase} active:scale-90 transition-transform duration-150`}>
+            <motion.div className="absolute inset-0 bg-[#262626] rounded-full" />
+            <User size={16} className="relative z-10 text-[#fafafa]" />
+          </button>
+        )}
+
+      </div>
+    </LayoutGroup>
   );
 }
