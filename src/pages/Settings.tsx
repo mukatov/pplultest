@@ -141,9 +141,7 @@ export default function Settings() {
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="px-4 pt-2 flex-shrink-0">
         <button
           onClick={() => navigate('/settings/new-split')}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#737373] hover:text-[#a3a3a3] transition-colors"
@@ -151,6 +149,8 @@ export default function Settings() {
           <Plus size={16} />
           {t.createCustomSplit}
         </button>
+
+        <div className="h-24" />
       </div>
 
       <BottomActionBar active="settings" />

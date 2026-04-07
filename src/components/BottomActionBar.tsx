@@ -17,7 +17,7 @@ export default function BottomActionBar({ active, onWorkout }: Props) {
   const pillBtn = 'flex items-center gap-2 px-8 py-3 bg-[#f5f5f5] text-[#0a0a0a] rounded-full font-medium text-base flex-shrink-0 active:scale-[0.97] transition-transform';
 
   return (
-    <div className="px-4 pb-8 pt-3 flex-shrink-0 flex items-center justify-center gap-3">
+    <div className="fixed bottom-0 left-0 right-0 pb-8 pt-3 flex items-center justify-center gap-3 bg-[#171717] z-40">
       {/* Settings slot */}
       {active === 'settings' ? (
         <button className={pillBtn}>

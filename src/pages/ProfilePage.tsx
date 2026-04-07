@@ -111,7 +111,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-28">
         {/* Avatar + identity */}
         <div className="bg-[#262626] rounded-2xl p-6 flex flex-col items-center gap-3">
           <div className="w-16 h-16 rounded-full bg-[#1c1c1c] flex items-center justify-center">
