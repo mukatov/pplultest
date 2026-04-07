@@ -9,7 +9,6 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
 import TrainingDay from './pages/TrainingDay';
 import Settings from './pages/Settings';
 import CreateSplitPage from './pages/CreateSplitPage';
@@ -70,7 +69,7 @@ function AppRoutes() {
       <Route element={<AuthGuard />}>
         <Route element={<Layout />}>
           <Route path="/home"              element={<Home />} />
-          <Route path="/dashboard"         element={<Dashboard />} />
+          <Route path="/dashboard"         element={<Navigate to="/profile" replace />} />
           <Route path="/settings"          element={<Settings />} />
           <Route path="/settings/new-split" element={<CreateSplitPage />} />
           <Route path="/profile"           element={<ProfilePage />} />

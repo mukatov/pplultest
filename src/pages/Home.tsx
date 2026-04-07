@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Menu, BarChart2, Settings, User, LogOut } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuthStore } from '../store/authStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { triggerHaptic } from '../utils/haptic';
 import { useT } from '../hooks/useT';
+import BottomActionBar from '../components/BottomActionBar';
 
 const DAYS_OF_WEEK = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-
-const MENU_PATHS = [
-  { key: 'dashboard' as const, icon: BarChart2, path: '/dashboard' },
-  { key: 'settings'  as const, icon: Settings,  path: '/settings'  },
-  { key: 'profile'   as const, icon: User,      path: '/profile'   },
-];
 
 export default function Home() {
   const navigate    = useNavigate();
@@ -21,7 +15,7 @@ export default function Home() {
   const activeSplitId = useWorkoutStore(s => s.activeSplitId);
   const workoutSets   = useWorkoutStore(s => s.workoutSets);
   const finishedDays  = useWorkoutStore(s => s.finishedDays);
-  const { currentUser, logout } = useAuthStore();
+  const { currentUser } = useAuthStore();
   const t = useT();
 
   const activeSplit = splits.find(s => s.id === activeSplitId) ?? splits[0];
@@ -49,7 +43,6 @@ export default function Home() {
   const [selected, setSelected]   = useState<string>(getInitialDay);
   const [toast, setToast]         = useState<{ label: string } | null>(null);
   const [countdown, setCountdown] = useState(5);
-  const [menuOpen, setMenuOpen]   = useState(false);
   const cardRefs    = useRef<Record<string, HTMLButtonElement>>({});
   const toastTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRaf   = useRef<number | null>(null);
@@ -122,7 +115,7 @@ export default function Home() {
 
   if (!currentUser) return null;
 
-  // ─── Last workout date per day ─────────────────────────────────────────────
+  // ─── Last workout date per day ────────────────────────────────────────────
   function lastWorkoutDate(dayType: string): string | null {
     const entry = [...workoutSets]
       .filter(ws => ws.exerciseId.startsWith(`${currentUser!.id}:`) && ws.dayType === dayType)
@@ -138,10 +131,9 @@ export default function Home() {
     return t.dAgo(d);
   }
 
-  const today       = DAYS_OF_WEEK[new Date().getDay()];
-  const handleStart  = () => { triggerHaptic(12); navigate(`/${selected}`); };
-  const handleLogout = async () => { await logout(); navigate('/login'); };
-  const handleUndo   = () => {
+  const today      = DAYS_OF_WEEK[new Date().getDay()];
+  const handleStart = () => { triggerHaptic(12); navigate(`/${selected}`); };
+  const handleUndo  = () => {
     if (toastTimer.current) clearInterval(toastTimer.current);
     setToast(null);
     navigate(-1);
@@ -170,17 +162,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 pt-10">
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
-        >
-          <Menu size={16} className="text-[#fafafa]" />
-        </button>
+      <div className="flex items-center px-4 py-3 pt-10">
         <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
           {activeSplit?.name ?? 'PPL/UL'}
         </h1>
-        <div className="w-10" />
       </div>
 
       {/* Center content */}
@@ -246,20 +231,9 @@ export default function Home() {
         <p className="text-sm uppercase tracking-[1.5px] text-[#fafafa]">{today}</p>
       </div>
 
-      {/* Bottom CTA */}
-      <div className="px-4 py-6 flex-shrink-0">
-        <button
-          onClick={handleStart}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-[#f5f5f5] text-[#0a0a0a] font-medium text-base transition-all active:scale-[0.98] hover:bg-white"
-        >
-          <Play size={16} className="fill-[#0a0a0a]" />
-          {t.startWorkout}
-        </button>
-      </div>
-
       {/* Finish toast */}
       {toast && (
-        <div className="fixed bottom-24 left-4 right-4 z-50">
+        <div className="fixed bottom-28 left-4 right-4 z-50">
           <div className="bg-[#1c1c1c] border border-[#4ade80]/30 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-lg">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#4ade80] truncate">
@@ -286,52 +260,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hamburger menu drawer */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60"
-          onClick={() => setMenuOpen(false)}
-        >
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-[#1c1c1c] rounded-t-3xl p-6 pb-10"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* User info */}
-            <div className="flex items-center gap-3 pb-5 mb-4 border-b border-[#2a2a2a]">
-              <div className="w-11 h-11 rounded-full bg-[#262626] flex items-center justify-center flex-shrink-0">
-                <User size={18} className="text-[#525252]" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[#fafafa] font-semibold text-sm truncate">{currentUser.email}</p>
-                <p className="text-[#525252] text-xs">
-                  {t.since} {new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {MENU_PATHS.map(({ key, icon: Icon, path }) => (
-                <button
-                  key={key}
-                  onClick={() => { navigate(path); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-[#262626] text-[#fafafa] font-medium text-sm active:bg-[#2e2e2e] transition-colors"
-                >
-                  <Icon size={18} className="text-[#737373]" />
-                  {t[key]}
-                </button>
-              ))}
-
-              <button
-                onClick={() => { handleLogout(); setMenuOpen(false); }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-[#262626] text-red-400 font-medium text-sm active:bg-[#2e2e2e] transition-colors"
-              >
-                <LogOut size={18} className="text-red-400" />
-                {t.logOut}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BottomActionBar active="home" onWorkout={handleStart} />
     </div>
   );
 }

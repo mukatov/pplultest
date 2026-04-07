@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ChevronLeft, Check, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Check, Trash2, Plus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useLangStore } from '../store/langStore';
 import { useT } from '../hooks/useT';
 import { useGoogleSheets, hasGoogleClientId } from '../hooks/useGoogleSheets';
+import BottomActionBar from '../components/BottomActionBar';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -31,17 +32,10 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 pt-10">
-        <button
-          onClick={() => navigate('/home')}
-          className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
-        >
-          <ChevronLeft size={16} className="text-[#fafafa]" />
-        </button>
-        <h1 className="flex-1 text-center text-2xl font-semibold tracking-[-0.5px] text-[#fafafa]">
-          {t.splits}
+      <div className="flex items-center px-4 py-3 pt-10">
+        <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
+          {t.settings}
         </h1>
-        <div className="w-10" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
@@ -149,7 +143,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="px-4 py-6 flex-shrink-0">
+      <div className="px-4 pt-2 flex-shrink-0">
         <button
           onClick={() => navigate('/settings/new-split')}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#737373] hover:text-[#a3a3a3] transition-colors"
@@ -158,6 +152,8 @@ export default function Settings() {
           {t.createCustomSplit}
         </button>
       </div>
+
+      <BottomActionBar active="settings" />
     </div>
   );
 }
