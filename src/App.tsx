@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useWorkoutStore } from './store/workoutStore';
 import { supabase } from './lib/supabase';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
 import Layout from './components/Layout';
@@ -9,7 +10,6 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
 import TrainingDay from './pages/TrainingDay';
 import Settings from './pages/Settings';
 import CreateSplitPage from './pages/CreateSplitPage';
@@ -40,8 +40,15 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
 
 // Inner component that has access to useNavigate (must be inside Router)
 function AppRoutes() {
-  const navigate = useNavigate();
-  const initialize = useAuthStore(s => s.initialize);
+  const navigate      = useNavigate();
+  const initialize    = useAuthStore(s => s.initialize);
+  const currentUser   = useAuthStore(s => s.currentUser);
+  const syncFromCloud = useWorkoutStore(s => s.syncFromCloud);
+
+  // Pull cloud data whenever a user signs in (or session is restored)
+  useEffect(() => {
+    if (currentUser) syncFromCloud(currentUser.id);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Initialize Supabase session + auth state listener
@@ -70,7 +77,7 @@ function AppRoutes() {
       <Route element={<AuthGuard />}>
         <Route element={<Layout />}>
           <Route path="/home"              element={<Home />} />
-          <Route path="/dashboard"         element={<Dashboard />} />
+          <Route path="/dashboard"         element={<Navigate to="/profile" replace />} />
           <Route path="/settings"          element={<Settings />} />
           <Route path="/settings/new-split" element={<CreateSplitPage />} />
           <Route path="/profile"           element={<ProfilePage />} />

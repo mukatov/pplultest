@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { ChevronLeft, Check, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Check, Trash2, Plus, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useLangStore } from '../store/langStore';
 import { useT } from '../hooks/useT';
 import { useGoogleSheets, hasGoogleClientId } from '../hooks/useGoogleSheets';
+import BottomActionBar from '../components/BottomActionBar';
 
 export default function Settings() {
   const navigate = useNavigate();
   const { splits, activeSplitId, setActiveSplit, deleteSplit } = useWorkoutStore();
   const { lang, setLang } = useLangStore();
   const t = useT();
-  const { isConnected, sheetId, sheetTitle, connect, disconnect } = useGoogleSheets();
+  const { isLinked, isAuthorized, sheetId, sheetTitle, connect, disconnect } = useGoogleSheets();
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState('');
 
@@ -31,17 +32,10 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-[#171717] flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 pt-10">
-        <button
-          onClick={() => navigate('/home')}
-          className="w-10 h-10 flex items-center justify-center bg-[#262626] rounded-lg flex-shrink-0"
-        >
-          <ChevronLeft size={16} className="text-[#fafafa]" />
-        </button>
-        <h1 className="flex-1 text-center text-2xl font-semibold tracking-[-0.5px] text-[#fafafa]">
-          {t.splits}
+      <div className="flex items-center px-4 py-3 pt-10">
+        <h1 className="flex-1 text-center text-5xl font-semibold tracking-[-1.5px] text-[#fafafa]">
+          {t.settings}
         </h1>
-        <div className="w-10" />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
@@ -82,28 +76,46 @@ export default function Settings() {
         <div>
           <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-1">{t.googleSheets}</p>
           <p className="text-xs text-[#525252] mb-3">{t.googleSheetsDesc}</p>
-          {isConnected ? (
-            <div className="bg-[#262626] rounded-2xl p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#fafafa] font-medium">{sheetTitle ?? 'Spreadsheet'}</p>
-                <p className="text-xs text-green-400 mt-0.5">● {t.connected}</p>
+          {isLinked ? (
+            <div className="space-y-2">
+              <div className="bg-[#262626] rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[#fafafa] font-medium">{sheetTitle ?? 'Spreadsheet'}</p>
+                  {isAuthorized
+                    ? <p className="text-xs text-green-400 mt-0.5">● {t.connected}</p>
+                    : <p className="text-xs text-yellow-500 mt-0.5">● {t.tokenExpired}</p>
+                  }
+                </div>
+                <div className="flex items-center gap-4">
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${sheetId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-[#737373] hover:text-[#fafafa] transition-colors"
+                  >
+                    {t.openSheet}
+                  </a>
+                  <button
+                    onClick={disconnect}
+                    className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                  >
+                    {t.disconnect}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <a
-                  href={`https://docs.google.com/spreadsheets/d/${sheetId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-[#737373] hover:text-[#fafafa] transition-colors"
-                >
-                  {t.openSheet}
-                </a>
+              {!isAuthorized && (
                 <button
-                  onClick={disconnect}
-                  className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#262626] border border-yellow-500/40 text-yellow-400 text-sm font-medium hover:bg-[#2e2e2e] transition-colors disabled:opacity-40"
                 >
-                  {t.disconnect}
+                  {connecting ? <Loader2 size={15} className="animate-spin" /> : null}
+                  {connecting ? t.connecting : t.reAuthorize}
                 </button>
-              </div>
+              )}
+              {connectError && (
+                <p className="text-xs text-red-400 text-center">{connectError}</p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -147,9 +159,7 @@ export default function Settings() {
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="px-4 py-6 flex-shrink-0">
         <button
           onClick={() => navigate('/settings/new-split')}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#737373] hover:text-[#a3a3a3] transition-colors"
@@ -157,7 +167,11 @@ export default function Settings() {
           <Plus size={16} />
           {t.createCustomSplit}
         </button>
+
+        <div className="h-24" />
       </div>
+
+      <BottomActionBar active="settings" />
     </div>
   );
 }

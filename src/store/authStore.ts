@@ -8,8 +8,13 @@ export interface User {
   createdAt: string;
 }
 
+const DEMO_EMAIL = 'demo@pplul.app';
+const DEMO_UID   = 'demo-user-001';
+
 function mapUser(u: SupabaseUser): User {
-  return { id: u.id, email: u.email ?? '', createdAt: u.created_at };
+  // Demo account always maps to the pre-seeded demo-user-001 data
+  const id = u.email === DEMO_EMAIL ? DEMO_UID : u.id;
+  return { id, email: u.email ?? '', createdAt: u.created_at };
 }
 
 interface AuthState {
