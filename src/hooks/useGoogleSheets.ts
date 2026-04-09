@@ -7,9 +7,20 @@ import {
   createSpreadsheet,
   initSheetHeaders,
   appendRows,
+  rebuildPivotSheets,
 } from '../lib/googleSheets';
 
 export { hasGoogleClientId };
+
+// Debounce pivot rebuild so a full session (~10 sets) triggers one rebuild, not ten.
+let _pivotTimer: ReturnType<typeof setTimeout> | null = null;
+function schedulePivotRebuild(token: string, sheetId: string) {
+  if (_pivotTimer) clearTimeout(_pivotTimer);
+  _pivotTimer = setTimeout(() => {
+    rebuildPivotSheets(token, sheetId).catch(() => {});
+    _pivotTimer = null;
+  }, 20_000); // 20 s after the last set in a session
+}
 
 export function useGoogleSheets() {
   const store        = useGoogleStore();
@@ -37,7 +48,7 @@ export function useGoogleSheets() {
   /**
    * Connect to Google Sheets via GIS token model.
    * Must be called from a click handler (GIS opens consent UI synchronously).
-   * On first connect, bulk-syncs all previously logged sets.
+   * On first connect, bulk-syncs all previously logged sets then rebuilds pivot sheets.
    */
   const connect = async () => {
     const { accessToken, expiresIn } = await requestGISToken('consent');
@@ -58,22 +69,16 @@ export function useGoogleSheets() {
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         for (const ws of sorted) {
-          const baseId      = ws.exerciseId.slice(prefix.length);
-          const name        = exerciseMap.get(baseId) ?? exerciseMap.get(ws.exerciseId) ?? baseId;
-          const d           = new Date(ws.date);
-          const dateStr     = d.toLocaleDateString('en-GB');
-          const timeStr     = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          const baseId  = ws.exerciseId.slice(prefix.length);
+          const name    = exerciseMap.get(baseId) ?? exerciseMap.get(ws.exerciseId) ?? baseId;
+          const d       = new Date(ws.date);
+          const dateStr = d.toLocaleDateString('en-GB');
+          const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
           ws.sets.forEach((set, i) => {
             rows.push([
-              dateStr,
-              timeStr,
-              ws.dayType,
-              name,
-              i + 1,
-              set.weight,
-              set.reps,
-              set.weight * set.reps,
+              dateStr, timeStr, ws.dayType, name,
+              i + 1, set.weight, set.reps, set.weight * set.reps,
             ]);
           });
         }
@@ -86,12 +91,16 @@ export function useGoogleSheets() {
           }
         }
       }
+
+      // Build pivot sheets immediately after initial data load
+      rebuildPivotSheets(accessToken, sheetId).catch(() => {});
     }
   };
 
   /**
    * Append one set row to the connected spreadsheet.
    * Silently ignores errors so a network hiccup never interrupts a workout.
+   * Schedules a debounced pivot rebuild 20 s after the last set in a session.
    */
   const appendSet = async (
     exerciseName: string, dayType: string, setIndex: number, weight: number, reps: number
@@ -111,6 +120,7 @@ export function useGoogleSheets() {
         reps,
         weight * reps,
       ]]);
+      schedulePivotRebuild(token, store.sheetId);
     } catch {
       // silently fail — never block a workout
     }
