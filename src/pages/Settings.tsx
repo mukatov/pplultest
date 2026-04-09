@@ -12,7 +12,7 @@ export default function Settings() {
   const { splits, activeSplitId, setActiveSplit, deleteSplit } = useWorkoutStore();
   const { lang, setLang } = useLangStore();
   const t = useT();
-  const { isConnected, sheetId, sheetTitle, connect, disconnect } = useGoogleSheets();
+  const { isLinked, isAuthorized, sheetId, sheetTitle, connect, disconnect } = useGoogleSheets();
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState('');
 
@@ -76,28 +76,46 @@ export default function Settings() {
         <div>
           <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-1">{t.googleSheets}</p>
           <p className="text-xs text-[#525252] mb-3">{t.googleSheetsDesc}</p>
-          {isConnected ? (
-            <div className="bg-[#262626] rounded-2xl p-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-[#fafafa] font-medium">{sheetTitle ?? 'Spreadsheet'}</p>
-                <p className="text-xs text-green-400 mt-0.5">● {t.connected}</p>
+          {isLinked ? (
+            <div className="space-y-2">
+              <div className="bg-[#262626] rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-[#fafafa] font-medium">{sheetTitle ?? 'Spreadsheet'}</p>
+                  {isAuthorized
+                    ? <p className="text-xs text-green-400 mt-0.5">● {t.connected}</p>
+                    : <p className="text-xs text-yellow-500 mt-0.5">● {t.tokenExpired}</p>
+                  }
+                </div>
+                <div className="flex items-center gap-4">
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${sheetId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-[#737373] hover:text-[#fafafa] transition-colors"
+                  >
+                    {t.openSheet}
+                  </a>
+                  <button
+                    onClick={disconnect}
+                    className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                  >
+                    {t.disconnect}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <a
-                  href={`https://docs.google.com/spreadsheets/d/${sheetId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-[#737373] hover:text-[#fafafa] transition-colors"
-                >
-                  {t.openSheet}
-                </a>
+              {!isAuthorized && (
                 <button
-                  onClick={disconnect}
-                  className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-[#262626] border border-yellow-500/40 text-yellow-400 text-sm font-medium hover:bg-[#2e2e2e] transition-colors disabled:opacity-40"
                 >
-                  {t.disconnect}
+                  {connecting ? <Loader2 size={15} className="animate-spin" /> : null}
+                  {connecting ? t.connecting : t.reAuthorize}
                 </button>
-              </div>
+              )}
+              {connectError && (
+                <p className="text-xs text-red-400 text-center">{connectError}</p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
