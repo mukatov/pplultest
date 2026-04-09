@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Exercise, WorkoutSet, Day, Split, Superset, PersonalRecord, DayType, SetEntry } from '../types';
 import { DEFAULT_EXERCISES } from '../data/exercises';
+import { pullCloudData, pushCloudData, mergeWorkoutSets, mergePersonalRecords } from '../lib/cloudSync';
 
 const DEMO_UID = 'demo-user-001';
 function ds(eid: string) { return `${DEMO_UID}:${eid}`; }
@@ -222,6 +223,8 @@ interface WorkoutState {
   deleteSplit: (id: string) => void;
   setActiveSplit: (id: string) => void;
   markDayFinished: (dayType: string) => void;
+
+  syncFromCloud: (userId: string) => Promise<void>;
 }
 
 function scopedKey(key: string, userId: string) {
@@ -261,8 +264,18 @@ export const useWorkoutStore = create<WorkoutState>()(
           })),
         })),
 
-      removeWorkout: (id) =>
-        set(state => ({ workoutSets: state.workoutSets.filter(ws => ws.id !== id) })),
+      removeWorkout: (id) => {
+        set(state => ({ workoutSets: state.workoutSets.filter(ws => ws.id !== id) }));
+        const { workoutSets, personalRecords } = get();
+        // Derive userId from the first remaining user set (any non-demo entry)
+        const anySet = workoutSets.find(ws => !ws.id.startsWith('demo-'));
+        const userId = anySet?.exerciseId.split(':')[0];
+        if (userId) {
+          const userSets = workoutSets.filter(ws => ws.exerciseId.startsWith(`${userId}:`));
+          const userPRs  = personalRecords.filter(pr => pr.exerciseId.startsWith(`${userId}:`));
+          pushCloudData(userId, userSets, userPRs);
+        }
+      },
 
       logWorkout: (exerciseId, sets, dayType, userId, supersetId?) => {
         const entry: WorkoutSet = {
@@ -286,6 +299,11 @@ export const useWorkoutStore = create<WorkoutState>()(
               { exerciseId: prKey, weight: maxWeight, reps: maxRepsAtMax, date: new Date().toISOString() },
             ];
           }
+          pushCloudData(
+            userId,
+            updated.filter(ws => ws.exerciseId.startsWith(`${userId}:`)),
+            newPRs.filter(pr => pr.exerciseId.startsWith(`${userId}:`)),
+          );
           return { workoutSets: updated, personalRecords: newPRs };
         });
       },
@@ -378,6 +396,31 @@ export const useWorkoutStore = create<WorkoutState>()(
         set(state => ({
           finishedDays: { ...state.finishedDays, [dayType]: new Date().toDateString() },
         })),
+
+      syncFromCloud: async (userId: string) => {
+        const cloud = await pullCloudData(userId);
+        if (!cloud) {
+          // No cloud data yet — push local data up so it's backed up
+          const { workoutSets, personalRecords } = get();
+          const localSets = workoutSets.filter(ws => ws.exerciseId.startsWith(`${userId}:`));
+          const localPRs  = personalRecords.filter(pr => pr.exerciseId.startsWith(`${userId}:`));
+          if (localSets.length > 0) pushCloudData(userId, localSets, localPRs);
+          return;
+        }
+        set(state => {
+          const demoSets = state.workoutSets.filter(ws => ws.id.startsWith('demo-'));
+          const localSets = state.workoutSets.filter(ws => ws.exerciseId.startsWith(`${userId}:`));
+          const localPRs  = state.personalRecords.filter(pr => pr.exerciseId.startsWith(`${userId}:`));
+          const mergedSets = mergeWorkoutSets(localSets, cloud.workoutSets);
+          const mergedPRs  = mergePersonalRecords(localPRs, cloud.personalRecords);
+          // Push merged result back so cloud stays up to date
+          pushCloudData(userId, mergedSets, mergedPRs);
+          return {
+            workoutSets:     [...demoSets, ...mergedSets],
+            personalRecords: mergedPRs,
+          };
+        });
+      },
     }),
     {
       name: 'ppl-workouts',

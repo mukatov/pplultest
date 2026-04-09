@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useWorkoutStore } from './store/workoutStore';
 import { supabase } from './lib/supabase';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
 import Layout from './components/Layout';
@@ -39,8 +40,15 @@ function RedirectIfAuthed({ children }: { children: React.ReactNode }) {
 
 // Inner component that has access to useNavigate (must be inside Router)
 function AppRoutes() {
-  const navigate = useNavigate();
-  const initialize = useAuthStore(s => s.initialize);
+  const navigate      = useNavigate();
+  const initialize    = useAuthStore(s => s.initialize);
+  const currentUser   = useAuthStore(s => s.currentUser);
+  const syncFromCloud = useWorkoutStore(s => s.syncFromCloud);
+
+  // Pull cloud data whenever a user signs in (or session is restored)
+  useEffect(() => {
+    if (currentUser) syncFromCloud(currentUser.id);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Initialize Supabase session + auth state listener
