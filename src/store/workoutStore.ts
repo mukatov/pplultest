@@ -705,7 +705,18 @@ export const useWorkoutStore = create<WorkoutState>()(
         })),
 
       syncFromCloud: async (userId: string) => {
-        if (userId === 'demo-user-001') return;
+        if (userId === 'demo-user-001') {
+          // Seed cloud on first login so demo data persists across devices.
+          // Subsequent logins find cloud data and skip the push.
+          const cloud = await pullCloudData(userId);
+          if (!cloud) {
+            const { workoutSets, personalRecords } = get();
+            const demoSets = workoutSets.filter(ws => ws.id.startsWith('demo-'));
+            const demoPRs  = personalRecords.filter(pr => pr.exerciseId.startsWith(`${userId}:`));
+            pushCloudData(userId, demoSets, demoPRs);
+          }
+          return;
+        }
         const cloud = await pullCloudData(userId);
         if (!cloud) {
           // No cloud data yet — push local data up so it's backed up
