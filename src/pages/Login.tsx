@@ -25,7 +25,7 @@ function AppleIcon() {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, loginWithApple } = useAuthStore();
+  const { login, loginAsDemo, loginWithGoogle, loginWithApple } = useAuthStore();
   const t = useT();
 
   const [email, setEmail]       = useState('');
@@ -57,6 +57,11 @@ export default function Login() {
     setError('');
     const result = await loginWithApple();
     if (!result.success) setError(result.error ?? 'Apple login failed');
+  };
+
+  const handleDemo = () => {
+    loginAsDemo();
+    navigate('/home');
   };
 
   return (
@@ -142,6 +147,20 @@ export default function Login() {
               {t.register}
             </Link>
           </p>
+
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <span className="text-xs text-[#525252] uppercase tracking-wider">{t.or}</span>
+            <div className="flex-1 h-px bg-[#2a2a2a]" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDemo}
+            className="w-full py-3 rounded-full border border-dashed border-[#404040] text-[#737373] text-sm font-medium hover:border-[#737373] hover:text-[#a3a3a3] transition-colors"
+          >
+            {t.tryDemo}
+          </button>
         </form>
       </div>
     </div>

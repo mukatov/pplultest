@@ -11,6 +11,12 @@ export interface User {
 const DEMO_EMAIL = 'demo@pplul.app';
 const DEMO_UID   = 'demo-user-001';
 
+const DEMO_USER: User = {
+  id:        DEMO_UID,
+  email:     DEMO_EMAIL,
+  createdAt: '2025-01-01T00:00:00.000Z',
+};
+
 function mapUser(u: SupabaseUser): User {
   // Demo account always maps to the pre-seeded demo-user-001 data
   const id = u.email === DEMO_EMAIL ? DEMO_UID : u.id;
@@ -23,6 +29,7 @@ interface AuthState {
   initialize: () => () => void;
   register: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean }>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginAsDemo: () => void;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   loginWithApple: () => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -71,6 +78,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
     if (error) return { success: false, error: error.message };
     return { success: true };
   },
+
+  loginAsDemo: () => set({ currentUser: DEMO_USER }),
 
   loginWithGoogle: async () => {
     const { error } = await supabase.auth.signInWithOAuth({
