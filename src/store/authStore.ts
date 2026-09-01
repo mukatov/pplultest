@@ -8,18 +8,17 @@ export interface User {
   createdAt: string;
 }
 
-const DEMO_EMAIL = 'demo@pplul.app';
-const DEMO_UID   = 'demo-user-001';
+const DEMO_UID    = 'demo-user-001';
+const DEMO_EMAILS = new Set(['demo@pplul.app', 'guest@pplul.app']);
 
 const DEMO_USER: User = {
   id:        DEMO_UID,
-  email:     DEMO_EMAIL,
+  email:     'demo@pplul.app',
   createdAt: '2025-01-01T00:00:00.000Z',
 };
 
 function mapUser(u: SupabaseUser): User {
-  // Demo account always maps to the pre-seeded demo-user-001 data
-  const id = u.email === DEMO_EMAIL ? DEMO_UID : u.id;
+  const id = DEMO_EMAILS.has(u.email ?? '') ? DEMO_UID : u.id;
   return { id, email: u.email ?? '', createdAt: u.created_at };
 }
 
