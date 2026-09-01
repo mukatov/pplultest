@@ -705,6 +705,7 @@ export const useWorkoutStore = create<WorkoutState>()(
         })),
 
       syncFromCloud: async (userId: string) => {
+        if (userId === 'demo-user-001') return;
         const cloud = await pullCloudData(userId);
         if (!cloud) {
           // No cloud data yet — push local data up so it's backed up

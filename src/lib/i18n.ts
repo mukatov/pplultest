@@ -146,6 +146,7 @@ export const translations = {
     forgotPassword:   'Forgot password?',
     noAccount:        'No account?',
     register:         'Register',
+    tryDemo:          'Try Demo',
 
     // Auth — Register
     createYourAccount:    'Create your account',
@@ -353,6 +354,7 @@ export const translations = {
     forgotPassword:   'Забыли пароль?',
     noAccount:        'Нет аккаунта?',
     register:         'Регистрация',
+    tryDemo:          'Демо-режим',
 
     // Auth — Register
     createYourAccount:    'Создайте аккаунт',
