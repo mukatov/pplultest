@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { Play, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, LayoutGroup } from 'framer-motion';
@@ -17,7 +18,7 @@ export default function BottomActionBar({ active, onWorkout }: Props) {
   const iconBase = 'relative w-10 h-10 flex items-center justify-center rounded-full flex-shrink-0 z-10';
   const pillBase = 'relative flex items-center gap-2 px-8 py-3 rounded-full font-medium text-base flex-shrink-0 z-10';
 
-  return (
+  return createPortal(
     <LayoutGroup>
       {/*
         Wrapper: full-width fixed zone.
@@ -92,6 +93,7 @@ export default function BottomActionBar({ active, onWorkout }: Props) {
           </div>
         </div>
       </div>
-    </LayoutGroup>
+    </LayoutGroup>,
+    document.body
   );
 }

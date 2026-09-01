@@ -168,8 +168,8 @@ export default function Home() {
         </h1>
       </div>
 
-      {/* Center content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8">
+      {/* Center content — pb-28 offsets the fixed bottom nav so justify-center lands above it */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 pb-28">
         <p className="text-lg font-semibold text-[#fafafa] text-center px-4">
           {t.whatWorkout}
         </p>
